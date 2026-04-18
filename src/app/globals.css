@@ -1,28 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 :root {
-  --bg: #1a1613;
-  --bg-warm: #1f1b17;
-  --surface: #2a2520;
-  --surface-2: #362f29;
-  --surface-3: #443c34;
-  --border: #4a4139;
-  --border-light: #5c5147;
-  --copper: #c2703e;
-  --copper-dim: #9e5a32;
-  --copper-glow: #d4853f;
-  --gold: #d4a34a;
-  --burgundy: #8b2252;
+  /* Light warm paper palette */
+  --bg: #f4ede2;
+  --bg-warm: #ede5d8;
+  --surface: #faf6f0;
+  --surface-2: #ede5d8;
+  --surface-3: #e2d8cb;
+  --border: #d4c9b8;
+  --border-light: #c4b8a4;
+  --copper: #b8622e;
+  --copper-dim: #955020;
+  --copper-glow: #cc7040;
+  --text: #1e1510;
+  --text-dim: #3d2e22;
+  --text-muted: #7a6a58;
   --cream: #faf7f2;
-  --cream-dim: #e8e0d4;
-  --paper: #f0e8da;
-  --text: #e7e0d5;
-  --text-dim: #c4bbb0;
-  --text-muted: #8a8078;
-  --ink: #2a1f18;
 
-  --font-display: 'Playfair Display', 'Georgia', serif;
+  --font-display: 'Playfair Display', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
@@ -33,155 +29,89 @@ body {
   font-family: var(--font-body);
 }
 
-/* ============ FILM GRAIN OVERLAY ============ */
+/* Film grain */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.025;
+  opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
   background-size: 256px 256px;
 }
 
-/* ============ TICKET STUB ============ */
-.ticket {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-
-.ticket::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 3px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--copper) 0px,
-    var(--copper) 8px,
-    transparent 8px,
-    transparent 14px
-  );
-}
-
-/* ============ SPROCKET CARD ============ */
-.sprocket {
-  position: relative;
-}
-
-.sprocket::before,
-.sprocket::after {
-  content: '';
-  position: absolute;
-  top: 12px; bottom: 12px;
-  width: 8px;
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0px,
-    transparent 4px,
-    var(--border) 4px,
-    var(--border) 12px,
-    transparent 12px,
-    transparent 16px
-  );
-  opacity: 0.5;
-}
-.sprocket::before { left: 4px; }
-.sprocket::after { right: 4px; }
-
-/* ============ PERFORATED TEAR ============ */
-.perforation {
+/* Ticket perforation */
+.ticket-top {
   border-top: 2px dashed var(--border);
   position: relative;
+  padding-top: 12px;
+  margin-top: 4px;
 }
-
-.perforation::before,
-.perforation::after {
+.ticket-top::before,
+.ticket-top::after {
   content: '';
   position: absolute;
-  top: -8px;
-  width: 14px;
-  height: 14px;
+  top: -7px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--bg);
+  border: 1px solid var(--border);
 }
-.perforation::before { left: -8px; }
-.perforation::after { right: -8px; }
+.ticket-top::before { left: -7px; }
+.ticket-top::after { right: -7px; }
 
-/* ============ MARQUEE HEADER ============ */
+/* Marquee label */
 .marquee {
-  font-family: var(--font-display);
-  letter-spacing: 0.15em;
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  font-weight: 700;
-  font-size: 0.65rem;
+  font-weight: 500;
+  font-size: 0.6rem;
   color: var(--copper);
-  background: var(--surface-2);
-  padding: 6px 16px;
-  display: inline-block;
 }
 
-/* ============ ANIMATIONS ============ */
-@keyframes reel-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.85; }
-}
-
+/* Animations */
 @keyframes curtain-reveal {
-  from { transform: translateY(16px); opacity: 0; }
+  from { transform: translateY(12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
-
-@keyframes ticket-stamp {
-  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
-  60% { transform: scale(1.05) rotate(1deg); }
+@keyframes stamp {
+  0% { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  65% { transform: scale(1.03) rotate(0.5deg); }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
-
-.reel-spin { animation: reel-spin 2s linear infinite; }
-.flicker { animation: flicker 3s ease-in-out infinite; }
-.curtain-in { animation: curtain-reveal 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-.ticket-stamp { animation: ticket-stamp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-.msg-in { animation: curtain-reveal 0.25s ease-out; }
-.pop-in { animation: ticket-stamp 0.35s ease-out; }
-
+@keyframes reel {
+  to { transform: rotate(360deg); }
+}
 @keyframes draw-reel {
   0% { transform: rotate(0deg) scale(1); }
-  50% { transform: rotate(720deg) scale(1.1); }
+  50% { transform: rotate(720deg) scale(1.08); }
   100% { transform: rotate(1440deg) scale(1); }
 }
+
+.curtain-in { animation: curtain-reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.pop-in { animation: stamp 0.35s ease-out; }
+.msg-in { animation: curtain-reveal 0.2s ease-out; }
+.reel-spin { animation: reel 2s linear infinite; }
 .draw-spin { animation: draw-reel 1.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
-/* ============ STAR RATING ============ */
-.star-btn {
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-.star-btn:hover { transform: scale(1.25); }
+/* Star */
+.star-btn { cursor: pointer; transition: transform 0.12s; }
+.star-btn:hover { transform: scale(1.3); }
 
-/* ============ SCROLLBAR ============ */
-::-webkit-scrollbar { width: 5px; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* ============ SELECTION ============ */
-::selection {
-  background: var(--copper);
-  color: var(--cream);
-}
+/* Selection */
+::selection { background: var(--copper); color: var(--cream); }
 
-/* ============ INPUT FOCUS ============ */
+/* Input focus */
 input:focus, textarea:focus {
+  outline: none;
   border-color: var(--copper) !important;
-  box-shadow: 0 0 0 1px var(--copper-dim);
+  box-shadow: 0 0 0 2px rgba(184, 98, 46, 0.12);
 }

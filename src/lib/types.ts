@@ -1,6 +1,24 @@
 export type MovieStatus = 'bucket' | 'selected' | 'watched'
 export type Frequency = 'weekly' | 'biweekly' | 'monthly'
 
+export interface Group {
+  id: string
+  name: string
+  emoji: string
+  invite_token: string
+  created_by: string | null
+  frequency: Frequency
+  next_draw_date: string | null
+  created_at: string
+  member_count?: number
+}
+
+export interface GroupMember {
+  group_id: string
+  user_id: string
+  joined_at: string
+}
+
 export interface Movie {
   id: string
   tmdb_id: number
@@ -10,6 +28,7 @@ export interface Movie {
   release_date: string
   added_by: string
   added_by_name: string
+  group_id: string
   status: MovieStatus
   selected_at: string | null
   watched_at: string | null
@@ -31,13 +50,8 @@ export interface Message {
   user_id: string
   user_name: string
   content: string
+  group_id: string
   created_at: string
-}
-
-export interface Settings {
-  id: string
-  frequency: Frequency
-  next_draw_date: string | null
 }
 
 export interface Profile {

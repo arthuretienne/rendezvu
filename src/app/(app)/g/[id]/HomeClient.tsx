@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPosterUrl } from '@/lib/tmdb'
-import { Movie, Frequency, Profile } from '@/lib/types'
+import { Movie, Group, Frequency, Profile } from '@/lib/types'
 import { Shuffle, Calendar, Film, Settings as SettingsIcon, Copy, Check, Users, Link as LinkIcon } from 'lucide-react'
 import { addWeeks, addMonths, format } from 'date-fns'
 import Image from 'next/image'
@@ -22,15 +22,17 @@ function getNextDate(f: Frequency) {
   return addMonths(now, 1)
 }
 
-export default function HomeClient({ userId, currentMovie, bucketCount, members }: {
+export default function HomeClient({ userId, groupId, group, currentMovie, bucketCount, members }: {
   userId: string
+  groupId: string
+  group: Group | null
   currentMovie: Movie | null
   bucketCount: number
   members: Pick<Profile, 'id' | 'name' | 'email'>[]
 }) {
   const [movie, setMovie] = useState<Movie | null>(currentMovie)
-  const [freq, setFreq] = useState<Frequency>('biweekly')
-  const [nextDate, setNextDate] = useState<string | null>(null)
+  const [freq, setFreq] = useState<Frequency>(group?.frequency ?? 'biweekly')
+  const [nextDate, setNextDate] = useState<string | null>(group?.next_draw_date ?? null)
   const [drawing, setDrawing] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -39,32 +41,29 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
   const router = useRouter()
   const isDrawing = useRef(false)
 
-  // Sync draw animation to all clients in real-time
   useEffect(() => {
     const channel = supabase
-      .channel('home-draw')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'movies' }, payload => {
+      .channel(`home-draw-${groupId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'movies',
+        filter: `group_id=eq.${groupId}`,
+      }, payload => {
         const updated = payload.new as Movie
         if (updated.status === 'selected' && !isDrawing.current) {
-          // Someone else drew — trigger animation then reveal
           setSpinning(true)
-          setTimeout(() => {
-            setSpinning(false)
-            setMovie(updated)
-            router.refresh()
-          }, 1500)
+          setTimeout(() => { setSpinning(false); setMovie(updated); router.refresh() }, 1500)
         }
         if (updated.status === 'watched' && !isDrawing.current) {
-          setMovie(null)
-          router.refresh()
+          setMovie(null); router.refresh()
         }
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [supabase, router])
+  }, [supabase, router, groupId])
 
   async function copyInviteLink() {
-    await navigator.clipboard.writeText(window.location.origin + '/auth')
+    const inviteUrl = `${window.location.origin}/invite/${group?.invite_token}`
+    await navigator.clipboard.writeText(inviteUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -72,10 +71,9 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
   async function drawMovie() {
     isDrawing.current = true
     setDrawing(true); setSpinning(true)
-    const { data: bucket } = await supabase.from('movies').select('*').eq('status', 'bucket')
+    const { data: bucket } = await supabase.from('movies').select('*').eq('group_id', groupId).eq('status', 'bucket')
     if (!bucket?.length) {
-      setDrawing(false); setSpinning(false)
-      isDrawing.current = false
+      setDrawing(false); setSpinning(false); isDrawing.current = false
       alert('No movies in the bucket!')
       return
     }
@@ -83,7 +81,7 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
     const picked = bucket[Math.floor(Math.random() * bucket.length)] as Movie
     await supabase.from('movies').update({ status: 'selected', selected_at: new Date().toISOString() }).eq('id', picked.id)
     const next = getNextDate(freq)
-    await supabase.from('settings').update({ next_draw_date: next.toISOString() }).eq('id', 1)
+    await supabase.from('groups').update({ next_draw_date: next.toISOString() }).eq('id', groupId)
     setNextDate(next.toISOString())
     setTimeout(() => { setSpinning(false); setMovie(picked); setDrawing(false); isDrawing.current = false; router.refresh() }, 1500)
   }
@@ -91,23 +89,22 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
   async function markWatched() {
     if (!movie) return
     await supabase.from('movies').update({ status: 'watched', watched_at: new Date().toISOString() }).eq('id', movie.id)
-    // Notify others by email
     const others = members.filter(m => m.id !== userId)
     if (others.length > 0) {
       fetch('/api/notify-watched', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ movieTitle: movie.title, memberEmails: others.map(m => m.email) }),
-      }).catch(() => {}) // fire and forget
+        body: JSON.stringify({ movieTitle: movie.title, memberEmails: others.map(m => m.email), groupId }),
+      }).catch(() => {})
     }
     setMovie(null)
-    router.push('/watched')
+    router.push(`/g/${groupId}/watched`)
     router.refresh()
   }
 
   async function saveFrequency(f: Frequency) {
     setFreq(f)
-    await supabase.from('settings').update({ frequency: f }).eq('id', 1)
+    await supabase.from('groups').update({ frequency: f }).eq('id', groupId)
     setShowSettings(false)
   }
 
@@ -116,7 +113,6 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
 
   return (
     <div className="space-y-5 curtain-in">
-      {/* Header */}
       <div className="flex items-end justify-between">
         <div>
           <p className="marquee">Now Playing</p>
@@ -129,17 +125,16 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
         </button>
       </div>
 
-      {/* Invite banner */}
       {needsInvite && (
         <div className="rounded-xl p-4 pop-in" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-3">
             <Users size={16} style={{ color: 'var(--copper)', flexShrink: 0 }} />
             <div className="flex-1">
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.875rem', color: 'var(--text)', fontWeight: 500 }}>
-                Invite your sister to join
+                Invite someone to this group
               </p>
               <p className="mt-0.5" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                Share this link — she signs up and you share everything.
+                Share the invite link — they sign up and join instantly.
               </p>
             </div>
             <button onClick={copyInviteLink} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-85 flex-shrink-0"
@@ -151,12 +146,11 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
         </div>
       )}
 
-      {/* Members + freq row */}
       <div className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
           {members.map(m => (
             <div key={m.id} className="flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--copper)', color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.6rem' }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: 'var(--copper)', color: '#fff', fontFamily: 'var(--font-display)', fontSize: '0.6rem', fontWeight: 700 }}>
                 {m.name[0]?.toUpperCase()}
               </div>
               <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>{m.name}</span>
@@ -175,7 +169,6 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
         </div>
       </div>
 
-      {/* Frequency settings */}
       {showSettings && (
         <div className="rounded-xl p-4 pop-in" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p className="marquee mb-3">Watch Frequency</p>
@@ -191,7 +184,6 @@ export default function HomeClient({ userId, currentMovie, bucketCount, members 
         </div>
       )}
 
-      {/* Current movie */}
       <div className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
         {movie ? (
           <div className="flex">

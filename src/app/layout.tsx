@@ -4,6 +4,11 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Cinephile Starter',
   description: 'Draw, watch, rate — together.',
+  appleWebApp: {
+    capable: true,
+    title: 'Cinephile Starter',
+    statusBarStyle: 'default',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

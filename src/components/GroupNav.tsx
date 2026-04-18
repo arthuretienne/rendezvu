@@ -2,20 +2,25 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Film, List, MessageCircle, Star, LogOut } from 'lucide-react'
+import { Film, List, MessageCircle, Star, LogOut, ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
-const links = [
-  { href: '/', label: 'Home', icon: Film },
-  { href: '/bucket', label: 'Bucket', icon: List },
-  { href: '/watched', label: 'Watched', icon: Star },
-  { href: '/chat', label: 'Chat', icon: MessageCircle },
-]
-
-export default function Nav({ userName }: { userName: string }) {
+export default function GroupNav({ groupId, groupName, groupEmoji, userName }: {
+  groupId: string
+  groupName: string
+  groupEmoji: string
+  userName: string
+}) {
   const path = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  const links = [
+    { href: `/g/${groupId}`, label: 'Home', icon: Film, exact: true },
+    { href: `/g/${groupId}/bucket`, label: 'Bucket', icon: List, exact: false },
+    { href: `/g/${groupId}/watched`, label: 'Watched', icon: Star, exact: false },
+    { href: `/g/${groupId}/chat`, label: 'Chat', icon: MessageCircle, exact: false },
+  ]
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -27,13 +32,24 @@ export default function Nav({ userName }: { userName: string }) {
     <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-warm)', borderBottom: '1px solid var(--border)' }}>
       <div className="max-w-4xl mx-auto px-4 h-13 flex items-center justify-between">
         <div className="flex items-center gap-0.5">
-          <Link href="/" className="flex items-center gap-2 mr-6">
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.01em' }}>
-              Cinephile Starter
+          {/* Back to groups */}
+          <Link
+            href="/groups"
+            className="flex items-center gap-1 mr-3 px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--surface-2)]"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <ChevronLeft size={14} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em' }} className="hidden sm:inline">
+              {groupEmoji} {groupName}
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem' }} className="sm:hidden">
+              {groupEmoji}
             </span>
           </Link>
-          {links.map(({ href, label, icon: Icon }) => {
-            const active = path === href
+
+          {/* Group links */}
+          {links.map(({ href, label, icon: Icon, exact }) => {
+            const active = exact ? path === href : path.startsWith(href)
             return (
               <Link
                 key={href}
@@ -52,6 +68,7 @@ export default function Nav({ userName }: { userName: string }) {
             )
           })}
         </div>
+
         <div className="flex items-center gap-3">
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-muted)' }} className="hidden sm:block">
             {userName}

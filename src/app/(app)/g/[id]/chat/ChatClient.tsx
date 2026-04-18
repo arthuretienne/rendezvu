@@ -6,8 +6,9 @@ import { Message } from '@/lib/types'
 import { Send } from 'lucide-react'
 import { format } from 'date-fns'
 
-export default function ChatClient({ userId, userName, initialMessages }: {
+export default function ChatClient({ userId, groupId, userName, initialMessages }: {
   userId: string
+  groupId: string
   userName: string
   initialMessages: Message[]
 }) {
@@ -19,20 +20,18 @@ export default function ChatClient({ userId, userName, initialMessages }: {
 
   useEffect(() => {
     const channel = supabase
-      .channel('chat-room')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+      .channel(`chat-room-${groupId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'messages',
+        filter: `group_id=eq.${groupId}`,
+      }, payload => {
         const msg = payload.new as Message
         setMessages(prev => {
-          // Replace optimistic message if it matches, otherwise append
           const idx = prev.findIndex(m =>
-            m.id.startsWith('opt-') &&
-            m.user_id === msg.user_id &&
-            m.content === msg.content
+            m.id.startsWith('opt-') && m.user_id === msg.user_id && m.content === msg.content
           )
           if (idx >= 0) {
-            const next = [...prev]
-            next[idx] = msg
-            return next
+            const next = [...prev]; next[idx] = msg; return next
           }
           if (prev.some(m => m.id === msg.id)) return prev
           return [...prev, msg]
@@ -40,7 +39,7 @@ export default function ChatClient({ userId, userName, initialMessages }: {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [supabase])
+  }, [supabase, groupId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -50,22 +49,20 @@ export default function ChatClient({ userId, userName, initialMessages }: {
     e.preventDefault()
     if (!text.trim() || sending) return
     setSending(true)
-
     const content = text.trim()
     setText('')
 
-    // Optimistic update — shows instantly
     const optimistic: Message = {
       id: `opt-${Date.now()}`,
       user_id: userId,
       user_name: userName,
       content,
-      group_id: '',
+      group_id: groupId,
       created_at: new Date().toISOString(),
     }
     setMessages(prev => [...prev, optimistic])
 
-    await supabase.from('messages').insert({ user_id: userId, user_name: userName, content })
+    await supabase.from('messages').insert({ user_id: userId, user_name: userName, content, group_id: groupId })
     setSending(false)
   }
 
@@ -74,10 +71,7 @@ export default function ChatClient({ userId, userName, initialMessages }: {
     let currentDate = ''
     for (const msg of messages) {
       const date = format(new Date(msg.created_at), 'EEEE, MMMM d')
-      if (date !== currentDate) {
-        currentDate = date
-        groups.push({ date, msgs: [] })
-      }
+      if (date !== currentDate) { currentDate = date; groups.push({ date, msgs: [] }) }
       groups[groups.length - 1].msgs.push(msg)
     }
     return groups
@@ -93,9 +87,7 @@ export default function ChatClient({ userId, userName, initialMessages }: {
       <div className="flex-1 overflow-y-auto pb-2">
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-              The lobby is quiet. Say something.
-            </p>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>The lobby is quiet. Say something.</p>
           </div>
         )}
 
@@ -114,7 +106,6 @@ export default function ChatClient({ userId, userName, initialMessages }: {
                 const isMe = msg.user_id === userId
                 const isOptimistic = msg.id.startsWith('opt-')
                 const showName = !isMe && (i === 0 || msgs[i - 1].user_id !== msg.user_id)
-
                 return (
                   <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} msg-in`}>
                     <div className={`max-w-xs sm:max-w-md flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
@@ -123,17 +114,14 @@ export default function ChatClient({ userId, userName, initialMessages }: {
                           {msg.user_name}
                         </span>
                       )}
-                      <div className="px-3.5 py-2"
-                        style={{
-                          fontFamily: 'var(--font-body)',
-                          fontSize: '0.875rem',
-                          lineHeight: 1.45,
-                          borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                          background: isMe ? 'var(--copper)' : 'var(--surface)',
-                          color: isMe ? '#fff' : 'var(--text)',
-                          border: isMe ? 'none' : '1px solid var(--border)',
-                          opacity: isOptimistic ? 0.7 : 1,
-                        }}>
+                      <div className="px-3.5 py-2" style={{
+                        fontFamily: 'var(--font-body)', fontSize: '0.875rem', lineHeight: 1.45,
+                        borderRadius: isMe ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                        background: isMe ? 'var(--copper)' : 'var(--surface)',
+                        color: isMe ? '#fff' : 'var(--text)',
+                        border: isMe ? 'none' : '1px solid var(--border)',
+                        opacity: isOptimistic ? 0.7 : 1,
+                      }}>
                         {msg.content}
                       </div>
                       <span className="mt-0.5 mx-1" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.5rem', color: 'var(--text-muted)', opacity: 0.5 }}>

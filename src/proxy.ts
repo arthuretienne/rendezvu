@@ -25,10 +25,14 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
+  const path = request.nextUrl.pathname
+  const isAuthPage = path.startsWith('/auth')
+  const isInvitePage = path.startsWith('/invite/')
 
-  if (!user && !isAuthPage) {
-    return NextResponse.redirect(new URL('/auth', request.url))
+  if (!user && !isAuthPage && !isInvitePage) {
+    const loginUrl = new URL('/auth', request.url)
+    loginUrl.searchParams.set('next', path)
+    return NextResponse.redirect(loginUrl)
   }
 
   if (user && isAuthPage) {
@@ -39,5 +43,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|apple-icon|icon|invite).*)'],
 }

@@ -6,10 +6,14 @@ export function getPosterUrl(path: string | null) {
   return `${TMDB_IMAGE_BASE}${path}`
 }
 
-export async function searchMovies(query: string) {
-  const res = await fetch(
-    `${TMDB_BASE}/search/movie?api_key=${process.env.NEXT_PUBLIC_TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`
-  )
+export async function searchMovies(query: string, year?: string) {
+  const params = new URLSearchParams({
+    api_key: (process.env.NEXT_PUBLIC_TMDB_API_KEY ?? '').trim(),
+    query,
+    include_adult: 'false',
+  })
+  if (year) params.set('year', year)
+  const res = await fetch(`${TMDB_BASE}/search/movie?${params}`)
   if (!res.ok) return []
   const data = await res.json()
   return data.results.slice(0, 8) as TmdbMovie[]

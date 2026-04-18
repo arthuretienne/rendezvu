@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { searchMovies, getPosterUrl, TmdbMovie } from '@/lib/tmdb'
 import { Movie } from '@/lib/types'
-import { Search, Plus, Trash2, Film, X, Upload, Eye, Clapperboard } from 'lucide-react'
+import { Search, Plus, Trash2, Film, X, Upload, Eye } from 'lucide-react'
 import Image from 'next/image'
 
 export default function BucketClient({ userId, movies: initial }: { userId: string; movies: Movie[] }) {
@@ -17,8 +17,6 @@ export default function BucketClient({ userId, movies: initial }: { userId: stri
   const router = useRouter()
   const [importing, setImporting] = useState(false)
   const [importStatus, setImportStatus] = useState<string | null>(null)
-  const [lbUsername, setLbUsername] = useState('')
-  const [showLbInput, setShowLbInput] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
@@ -61,70 +59,6 @@ export default function BucketClient({ userId, movies: initial }: { userId: stri
     setMovies(prev => prev.filter(m => m.id !== id))
     router.push('/watched')
     router.refresh()
-  }
-
-  async function handleLetterboxdImport(e: React.FormEvent) {
-    e.preventDefault()
-    if (!lbUsername.trim()) return
-    setImporting(true)
-    setImportStatus('Fetching watchlist…')
-
-    const res = await fetch(`/api/letterboxd-rss?username=${encodeURIComponent(lbUsername.trim())}`)
-    const data = await res.json()
-
-    if (!res.ok || !data.films) {
-      setImportStatus(data.error ?? 'Failed to fetch watchlist')
-      setImporting(false)
-      return
-    }
-
-    const { data: profile } = await supabase.from('profiles').select('name').eq('id', userId).single()
-    const userName = profile?.name ?? 'You'
-    const existingTmdbIds = new Set(movies.map(m => m.tmdb_id))
-    let added = 0
-    let skipped = 0
-
-    for (const film of data.films as { title: string; year: string | null }[]) {
-      await new Promise(r => setTimeout(r, 300))
-      let searchResults = await searchMovies(film.title, film.year ?? undefined)
-      if (!searchResults.length && film.year) searchResults = await searchMovies(film.title)
-
-      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
-      const searchNorm = normalize(film.title)
-      const match = searchResults.find(r => normalize(r.title).includes(searchNorm) || searchNorm.includes(normalize(r.title))) ?? searchResults[0]
-      if (!match) { skipped++; continue }
-      const matchNorm = normalize(match.title)
-      const similarity = Math.max(
-        searchNorm.length > 0 ? (matchNorm.includes(searchNorm) || searchNorm.includes(matchNorm) ? 1 : 0) : 0,
-        searchNorm.length >= 4 ? (matchNorm.startsWith(searchNorm.slice(0, 4)) ? 0.5 : 0) : 1
-      )
-      if (similarity === 0) { skipped++; continue }
-      if (existingTmdbIds.has(match.id)) { skipped++; continue }
-      existingTmdbIds.add(match.id)
-
-      const { data: inserted, error } = await supabase.from('movies').insert({
-        tmdb_id: match.id,
-        title: match.title,
-        poster_path: match.poster_path,
-        overview: match.overview,
-        release_date: match.release_date,
-        added_by: userId,
-        added_by_name: userName,
-        status: 'bucket',
-      }).select().single()
-
-      if (!error && inserted) {
-        setMovies(prev => [inserted, ...prev])
-        setImportStatus(`Importing… ${added + 1} added`)
-        added++
-      } else {
-        skipped++
-      }
-    }
-
-    setImportStatus(`Imported ${added} film${added !== 1 ? 's' : ''}${skipped > 0 ? `, ${skipped} skipped` : ''} from @${lbUsername.trim()}`)
-    setImporting(false)
-    setShowLbInput(false)
   }
 
   async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -219,17 +153,8 @@ export default function BucketClient({ userId, movies: initial }: { userId: stri
             {movies.length} film{movies.length !== 1 ? 's' : ''} in the queue
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1.5">
+        <div className="flex flex-col items-end gap-1">
           <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
-          <button
-            onClick={() => { setShowLbInput(v => !v); setImportStatus(null) }}
-            disabled={importing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all hover:opacity-85 disabled:opacity-50"
-            style={{ fontFamily: 'var(--font-mono)', background: showLbInput ? 'var(--copper)' : 'var(--surface)', border: '1px solid var(--border)', color: showLbInput ? '#fff' : 'var(--text-muted)', letterSpacing: '0.04em' }}
-          >
-            <Clapperboard size={11} />
-            Letterboxd
-          </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={importing}
@@ -237,29 +162,8 @@ export default function BucketClient({ userId, movies: initial }: { userId: stri
             style={{ fontFamily: 'var(--font-mono)', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)', letterSpacing: '0.04em' }}
           >
             <Upload size={11} />
-            {importing ? 'Importing...' : 'CSV'}
+            {importing ? 'Importing...' : 'Import Letterboxd CSV'}
           </button>
-          {showLbInput && (
-            <form onSubmit={handleLetterboxdImport} className="flex gap-1.5">
-              <input
-                value={lbUsername}
-                onChange={e => setLbUsername(e.target.value)}
-                placeholder="username"
-                disabled={importing}
-                autoFocus
-                className="w-28 px-2 py-1 rounded text-xs outline-none"
-                style={{ fontFamily: 'var(--font-mono)', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', letterSpacing: '0.04em' }}
-              />
-              <button
-                type="submit"
-                disabled={importing || !lbUsername.trim()}
-                className="px-2.5 py-1 rounded text-xs transition-all hover:opacity-85 disabled:opacity-40"
-                style={{ fontFamily: 'var(--font-mono)', background: 'var(--copper)', color: '#fff' }}
-              >
-                {importing ? '…' : 'Go'}
-              </button>
-            </form>
-          )}
           {importStatus && (
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--copper)', letterSpacing: '0.04em' }}>
               {importStatus}

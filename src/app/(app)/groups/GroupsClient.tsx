@@ -66,14 +66,23 @@ export default function GroupsClient({ userId, userName, initialGroups }: {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       {/* Header */}
-      <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-warm)', borderBottom: '1px solid var(--border)' }}>
+      <nav
+        className="sticky top-0 z-50"
+        style={{
+          background: 'rgba(7, 7, 15, 0.75)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          boxShadow: '0 1px 32px rgba(0,0,0,0.4)',
+        }}
+      >
         <div className="max-w-4xl mx-auto px-4 h-13 flex items-center justify-between">
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.01em' }}>
-            Cinephile Starter
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', color: 'var(--text)', fontWeight: 600, letterSpacing: '0.02em' }}>
+            Cinephile
           </span>
           <div className="flex items-center gap-3">
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-muted)' }} className="hidden sm:block">{userName}</span>
-            <button onClick={signOut} className="p-1.5 rounded hover:bg-[var(--surface-2)] transition-colors" style={{ color: 'var(--text-muted)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }} className="hidden sm:block">{userName}</span>
+            <button onClick={signOut} className="p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer" style={{ color: 'var(--text-muted)' }}>
               <LogOut size={13} />
             </button>
           </div>
@@ -96,7 +105,7 @@ export default function GroupsClient({ userId, userName, initialGroups }: {
             <button
               onClick={() => { setCreating(v => !v); setCreateError('') }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-85"
-              style={{ background: 'var(--copper)', color: '#fff', fontFamily: 'var(--font-display)' }}
+              style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)' }}
             >
               <Plus size={14} />
               New group
@@ -146,7 +155,7 @@ export default function GroupsClient({ userId, userName, initialGroups }: {
                   type="submit"
                   disabled={!name.trim() || saving}
                   className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 hover:opacity-85"
-                  style={{ background: 'var(--copper)', color: '#fff', fontFamily: 'var(--font-display)' }}
+                  style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)' }}
                 >
                   {saving ? 'Creating...' : 'Create group'}
                 </button>

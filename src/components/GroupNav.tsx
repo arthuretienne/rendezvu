@@ -29,51 +29,86 @@ export default function GroupNav({ groupId, groupName, groupEmoji, userName }: {
   }
 
   return (
-    <nav className="sticky top-0 z-50" style={{ background: 'var(--bg-warm)', borderBottom: '1px solid var(--border)' }}>
+    <nav
+      className="sticky top-0 z-50"
+      style={{
+        background: 'rgba(7, 7, 15, 0.75)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        boxShadow: '0 1px 32px rgba(0,0,0,0.4)',
+      }}
+    >
       <div className="max-w-4xl mx-auto px-4 h-13 flex items-center justify-between">
         <div className="flex items-center gap-0.5">
           {/* Back to groups */}
           <Link
             href="/groups"
-            className="flex items-center gap-1 mr-3 px-2 py-1.5 rounded-lg transition-colors hover:bg-[var(--surface-2)]"
+            className="flex items-center gap-1.5 mr-3 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5 cursor-pointer"
             style={{ color: 'var(--text-muted)' }}
           >
-            <ChevronLeft size={14} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', letterSpacing: '0.04em' }} className="hidden sm:inline">
+            <ChevronLeft size={13} />
+            <span
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}
+              className="hidden sm:inline"
+            >
               {groupEmoji} {groupName}
             </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem' }} className="sm:hidden">
+            <span
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}
+              className="sm:hidden"
+            >
               {groupEmoji}
             </span>
           </Link>
 
-          {/* Group links */}
+          {/* Divider */}
+          <div className="hidden sm:block w-px h-4 mr-2" style={{ background: 'var(--border)' }} />
+
+          {/* Nav links */}
           {links.map(({ href, label, icon: Icon, exact }) => {
             const active = exact ? path === href : path.startsWith(href)
             return (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm relative transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm relative transition-all cursor-pointer"
                 style={{
                   fontFamily: 'var(--font-body)',
                   fontWeight: active ? 500 : 400,
                   color: active ? 'var(--copper)' : 'var(--text-muted)',
+                  letterSpacing: '0.01em',
                 }}
               >
                 <Icon size={13} />
-                <span className="hidden sm:inline">{label}</span>
-                {active && <span className="absolute bottom-0 left-2 right-2 h-px" style={{ background: 'var(--copper)' }} />}
+                <span className="hidden sm:inline" style={{ fontSize: '0.82rem' }}>{label}</span>
+                {active && (
+                  <span
+                    className="absolute bottom-0 left-2 right-2 h-px"
+                    style={{
+                      background: 'var(--copper)',
+                      boxShadow: '0 0 6px rgba(201,162,85,0.6)',
+                    }}
+                  />
+                )}
               </Link>
             )
           })}
         </div>
 
         <div className="flex items-center gap-3">
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--text-muted)' }} className="hidden sm:block">
+          <span
+            style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.05em' }}
+            className="hidden sm:block"
+          >
             {userName}
           </span>
-          <button onClick={signOut} className="p-1.5 rounded hover:bg-[var(--surface-2)] transition-colors" style={{ color: 'var(--text-muted)' }}>
+          <button
+            onClick={signOut}
+            className="p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer"
+            style={{ color: 'var(--text-muted)' }}
+            title="Sign out"
+          >
             <LogOut size={13} />
           </button>
         </div>

@@ -161,7 +161,7 @@ export default function WatchedClient({
               : 0
 
             return (
-              <div key={m.id} className="ticket rounded-lg overflow-hidden">
+              <div key={m.id} className="rounded-xl overflow-hidden" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <div className="flex gap-4 p-4">
                   {m.poster_path ? (
                     <Image
@@ -189,7 +189,7 @@ export default function WatchedClient({
                     {(avgRating > 0 || movieReviews.some(r => r.user_id !== userId)) && (
                       <div className="mt-2 relative">
                         {!myReview && movieReviews.some(r => r.user_id !== userId) && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center rounded" style={{ backdropFilter: 'blur(6px)', background: 'rgba(244,237,226,0.4)' }}>
+                          <div className="absolute inset-0 z-10 flex items-center justify-center rounded" style={{ backdropFilter: 'blur(8px)', background: 'rgba(7,7,15,0.7)', border: '1px solid var(--border)' }}>
                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
                               Write your review to reveal
                             </span>

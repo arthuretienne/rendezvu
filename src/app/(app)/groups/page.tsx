@@ -1,8 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import GroupsClient from './GroupsClient'
+import type { Group } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
+
+type MembershipRow = {
+  group_id: string
+  joined_at: string
+  groups: Group  // supabase-js infers Group[] but the relationship is many-to-one
+}
 
 export default async function GroupsPage() {
   const supabase = await createClient()
@@ -10,23 +17,25 @@ export default async function GroupsPage() {
   if (!user) redirect('/auth')
 
   const { data: profile } = await supabase
-    .from('profiles').select('name').eq('id', user.id).single()
+    .from('profiles')
+    .select('id, username, display_name, avatar_url, is_patron')
+    .eq('id', user.id)
+    .single()
 
-  // Get groups the user belongs to, with member count
   const { data: memberships } = await supabase
     .from('group_members')
-    .select('group_id, groups(id, name, emoji, invite_token, frequency, next_draw_date, created_by, created_at)')
+    .select(`
+      group_id,
+      joined_at,
+      groups!inner (
+        id, name, emoji, cover_url, kind, visibility, rules,
+        next_draw_at, invite_token, created_by, created_at
+      )
+    `)
     .eq('user_id', user.id)
+    .is('left_at', null)
+    .order('joined_at', { ascending: true })
+    .returns<MembershipRow[]>()
 
-  const groups = (memberships ?? [])
-    .map((m: any) => m.groups)
-    .filter(Boolean)
-
-  return (
-    <GroupsClient
-      userId={user.id}
-      userName={profile?.name ?? user.email ?? 'You'}
-      initialGroups={groups}
-    />
-  )
+  return <GroupsClient profile={profile} memberships={memberships ?? []} />
 }

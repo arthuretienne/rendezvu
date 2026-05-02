@@ -28,7 +28,7 @@ export default async function GroupLayout({
 
   const [{ data: group }, { data: profile }] = await Promise.all([
     supabase.from('groups').select('name, emoji').eq('id', groupId).single(),
-    supabase.from('profiles').select('name').eq('id', user.id).single(),
+    supabase.from('profiles').select('display_name').eq('id', user.id).single(),
   ])
 
   return (
@@ -37,7 +37,7 @@ export default async function GroupLayout({
         groupId={groupId}
         groupName={group?.name ?? 'Group'}
         groupEmoji={group?.emoji ?? '🎬'}
-        userName={profile?.name ?? user.email ?? 'You'}
+        userName={profile?.display_name ?? user.email ?? 'You'}
       />
       <main className="max-w-4xl mx-auto px-4 py-8">{children}</main>
     </div>

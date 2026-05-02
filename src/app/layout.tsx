@@ -2,11 +2,11 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Cinephile Starter',
-  description: 'Draw, watch, rate — together.',
+  title: 'Rendezvu',
+  description: 'Movie rendez-vous for friends and family who don\'t live together.',
   appleWebApp: {
     capable: true,
-    title: 'Cinephile Starter',
+    title: 'Rendezvu',
     statusBarStyle: 'default',
   },
 }

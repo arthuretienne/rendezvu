@@ -21,12 +21,23 @@ function AuthForm() {
     setLoading(true)
     const supabase = createClient()
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
-      if (error) { setError(error.message); setLoading(false); return }
-      await supabase.auth.signInWithPassword({ email, password })
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { display_name: name, name } },
+      })
+      if (signUpError) { setError(signUpError.message); setLoading(false); return }
+      // If email confirmation is required by the project, signUp returns user but no session.
+      if (!signUpData.session) {
+        setError('Account created. Check your inbox for the confirmation link, then sign in.')
+        setLoading(false)
+        setMode('login')
+        return
+      }
+      // Email confirmation off → session is live, no need to call signIn again.
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) { setError(error.message); setLoading(false); return }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) { setError(signInError.message); setLoading(false); return }
     }
     router.push(next)
     router.refresh()
@@ -52,21 +63,21 @@ function AuthForm() {
             color: 'var(--copper)', letterSpacing: '0.25em',
             textTransform: 'uppercase', marginBottom: '0.75rem',
           }}>
-            ◆ Cinema Club ◆
+            ◆ Movie Rendez-vous ◆
           </p>
           <h1 style={{
             fontFamily: 'var(--font-display)', fontSize: '2.8rem',
             color: 'var(--text)', fontWeight: 600, lineHeight: 1,
             letterSpacing: '0.02em',
           }}>
-            Cinephile
+            Rendezvu
           </h1>
           <p style={{
             fontFamily: 'var(--font-mono)', fontSize: '0.55rem',
             color: 'var(--text-muted)', letterSpacing: '0.2em',
             textTransform: 'uppercase', marginTop: '0.5rem',
           }}>
-            Draw · Watch · Rate
+            Watch together — apart
           </p>
         </div>
 
@@ -106,20 +117,21 @@ function AuthForm() {
             {mode === 'signup' && (
               <div className="curtain-in">
                 <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Arthur" required
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Arthur" required autoComplete="name"
                   className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
                   style={{ fontFamily: 'var(--font-body)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)' }} />
               </div>
             )}
             <div>
               <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" required autoComplete="email"
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
                 style={{ fontFamily: 'var(--font-body)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)' }} />
             </div>
             <div>
               <label className="block mb-1.5" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Password</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required minLength={6}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 className="w-full px-3.5 py-2.5 rounded-xl text-sm transition-all"
                 style={{ fontFamily: 'var(--font-body)', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--text)' }} />
             </div>

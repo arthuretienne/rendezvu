@@ -6,12 +6,13 @@ export const dynamic = 'force-dynamic'
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
   // Not logged in → send to auth with next param
-  if (!user) {
+  if (!session) {
     redirect(`/auth?next=/invite/${token}`)
   }
+  const user = session.user
 
   // Look up group via security-definer RPC (bypasses RLS for non-members)
   const { data: groups } = await supabase.rpc('get_group_by_invite_token', { token })

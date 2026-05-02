@@ -31,6 +31,7 @@ export async function proxy(request: NextRequest) {
     || path.startsWith('/auth')
     || path.startsWith('/invite/')
     || path.startsWith('/u/')
+    || path === '/privacy'
 
   if (!user && !isPublic) {
     const loginUrl = new URL('/auth', request.url)

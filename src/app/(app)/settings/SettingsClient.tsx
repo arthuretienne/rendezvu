@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, LogOut, Crown } from 'lucide-react'
+import { ArrowLeft, LogOut, Crown, Upload, ExternalLink, Download, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Visibility } from '@/lib/types'
 
@@ -50,6 +50,18 @@ export default function SettingsClient({
   async function signOut() {
     await supabase.auth.signOut()
     router.push('/auth')
+    router.refresh()
+  }
+
+  async function deleteAccount() {
+    if (!confirm('Delete your account?\n\nYour profile, lists and reviews will be hidden immediately and permanently deleted after 30 days. You can recover during that window by emailing support.')) return
+    const r = await fetch('/api/account/delete', { method: 'POST' })
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}))
+      setError(j.error ?? 'Could not delete account.')
+      return
+    }
+    router.push('/')
     router.refresh()
   }
 
@@ -105,9 +117,18 @@ export default function SettingsClient({
         </div>
 
         <div>
-          <label className="block mb-1.5" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Username
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Username
+            </label>
+            <Link
+              href={`/u/${profile.username}`}
+              className="inline-flex items-center gap-1 transition-all hover:opacity-70"
+              style={{ color: 'var(--copper)', fontSize: '0.66rem', fontFamily: 'var(--font-body)' }}
+            >
+              View public profile <ExternalLink size={10} />
+            </Link>
+          </div>
           <input
             value={profile.username}
             disabled
@@ -235,6 +256,54 @@ export default function SettingsClient({
                 background: profile.discover_opt_in ? '#000' : 'var(--text-muted)',
               }}
             />
+          </button>
+        </div>
+      </section>
+
+      {/* Import */}
+      <section
+        className="rounded-xl p-5 mb-5"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      >
+        <h2 className="marquee mb-2">Import</h2>
+        <p className="mb-3" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>
+          Bring your Letterboxd ratings, watched, or diary CSV. We resolve each film via TMDB and keep your reviews.
+        </p>
+        <Link
+          href="/settings/import"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all hover:opacity-90"
+          style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)', fontSize: '0.85rem' }}
+        >
+          <Upload size={13} />
+          Import from Letterboxd
+        </Link>
+      </section>
+
+      {/* Privacy & Data */}
+      <section
+        className="rounded-xl p-5 mb-5"
+        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+      >
+        <h2 className="marquee mb-2">Privacy & Data</h2>
+        <p className="mb-3" style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>
+          You can download everything we store about you, or delete your account. See <Link href="/privacy" style={{ color: 'var(--copper)' }}>Privacy</Link> for what we keep and why.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/api/account/export"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all hover:bg-white/5"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.85rem' }}
+          >
+            <Download size={13} />
+            Export my data
+          </a>
+          <button
+            onClick={deleteAccount}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg transition-all hover:bg-red-500/10 cursor-pointer"
+            style={{ background: 'transparent', border: '1px solid rgba(220,38,38,0.3)', color: '#fca5a5', fontFamily: 'var(--font-body)', fontSize: '0.85rem' }}
+          >
+            <Trash2 size={13} />
+            Delete account
           </button>
         </div>
       </section>

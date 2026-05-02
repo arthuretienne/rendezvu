@@ -255,6 +255,16 @@ export default async function LandingPage() {
           </p>
           <div className="flex gap-4">
             <Link
+              href="/privacy"
+              style={{
+                fontFamily: 'var(--font-body)',
+                fontSize: '0.78rem',
+                color: 'var(--text-muted)',
+              }}
+            >
+              Privacy
+            </Link>
+            <Link
               href="/auth"
               style={{
                 fontFamily: 'var(--font-body)',

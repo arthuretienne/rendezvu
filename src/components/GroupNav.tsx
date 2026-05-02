@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Film, List, MessageCircle, Star, LogOut, ChevronLeft } from 'lucide-react'
+import { LogOut, ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function GroupNav({ groupId, groupName, groupEmoji, userName }: {
@@ -16,10 +16,10 @@ export default function GroupNav({ groupId, groupName, groupEmoji, userName }: {
   const supabase = createClient()
 
   const links = [
-    { href: `/g/${groupId}`, label: 'Home', icon: Film, exact: true },
-    { href: `/g/${groupId}/bucket`, label: 'Bucket', icon: List, exact: false },
-    { href: `/g/${groupId}/watched`, label: 'Watched', icon: Star, exact: false },
-    { href: `/g/${groupId}/chat`, label: 'Chat', icon: MessageCircle, exact: false },
+    { href: `/g/${groupId}`,         label: 'Accueil', exact: true },
+    { href: `/g/${groupId}/bucket`,  label: 'Bucket',  exact: false },
+    { href: `/g/${groupId}/watched`, label: 'Vus',     exact: false },
+    { href: `/g/${groupId}/chat`,    label: 'Chat',    exact: false },
   ]
 
   async function signOut() {
@@ -32,84 +32,64 @@ export default function GroupNav({ groupId, groupName, groupEmoji, userName }: {
     <nav
       className="sticky top-0 z-50"
       style={{
-        background: 'rgba(7, 7, 15, 0.75)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
-        boxShadow: '0 1px 32px rgba(0,0,0,0.4)',
+        background: 'var(--ink)',
+        borderBottom: '1px solid var(--border-faint)',
       }}
     >
-      <div className="max-w-4xl mx-auto px-4 h-13 flex items-center justify-between">
-        <div className="flex items-center gap-0.5">
-          {/* Back to groups */}
+      <div className="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-5">
           <Link
             href="/groups"
-            className="flex items-center gap-1.5 mr-3 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5 cursor-pointer"
+            className="t-caption inline-flex items-center gap-1"
             style={{ color: 'var(--text-muted)' }}
           >
-            <ChevronLeft size={13} />
-            <span
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.58rem', letterSpacing: '0.06em', textTransform: 'uppercase' }}
-              className="hidden sm:inline"
-            >
-              {groupEmoji} {groupName}
-            </span>
-            <span
-              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem' }}
-              className="sm:hidden"
-            >
-              {groupEmoji}
-            </span>
+            <ChevronLeft size={14} />
+            <span className="hidden sm:inline">{groupEmoji} {groupName}</span>
+            <span className="sm:hidden">{groupEmoji}</span>
           </Link>
 
-          {/* Divider */}
-          <div className="hidden sm:block w-px h-4 mr-2" style={{ background: 'var(--border)' }} />
-
-          {/* Nav links */}
-          {links.map(({ href, label, icon: Icon, exact }) => {
-            const active = exact ? path === href : path.startsWith(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm relative transition-all cursor-pointer"
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontWeight: active ? 500 : 400,
-                  color: active ? 'var(--copper)' : 'var(--text-muted)',
-                  letterSpacing: '0.01em',
-                }}
-              >
-                <Icon size={13} />
-                <span className="hidden sm:inline" style={{ fontSize: '0.82rem' }}>{label}</span>
-                {active && (
-                  <span
-                    className="absolute bottom-0 left-2 right-2 h-px"
-                    style={{
-                      background: 'var(--copper)',
-                      boxShadow: '0 0 6px rgba(201,162,85,0.6)',
-                    }}
-                  />
-                )}
-              </Link>
-            )
-          })}
+          <div className="flex items-center gap-4">
+            {links.map(({ href, label, exact }) => {
+              const active = exact ? path === href : path.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className="relative py-1"
+                  style={{
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: '14px',
+                    fontWeight: active ? 600 : 400,
+                    color: active ? 'var(--text)' : 'var(--text-muted)',
+                  }}
+                >
+                  {label}
+                  {active && (
+                    <span
+                      className="absolute -bottom-px left-0 right-0"
+                      style={{ height: '1px', background: 'var(--accent)' }}
+                    />
+                  )}
+                </Link>
+              )
+            })}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <span
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.05em' }}
-            className="hidden sm:block"
+            className="t-caption hidden sm:block"
+            style={{ color: 'var(--text-muted)' }}
           >
             {userName}
           </span>
           <button
             onClick={signOut}
-            className="p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer"
-            style={{ color: 'var(--text-muted)' }}
-            title="Sign out"
+            className="btn btn-ghost"
+            style={{ height: 32, padding: '0 6px' }}
+            title="Se déconnecter"
           >
-            <LogOut size={13} />
+            <LogOut size={14} />
           </button>
         </div>
       </div>

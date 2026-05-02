@@ -1,22 +1,20 @@
 export default function RebuildingNotice({ surface, plan }: { surface: string; plan: string }) {
   return (
-    <div className="space-y-4">
-      <header>
-        <p className="marquee">Rendezvu</p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'var(--text)', fontWeight: 600 }}>
-          {surface}
-        </h1>
+    <div className="space-y-6">
+      <header className="space-y-2">
+        <p className="t-caption" style={{ color: 'var(--text-muted)' }}>Rendezvu</p>
+        <h1 className="t-h1">{surface}</h1>
       </header>
       <div
-        className="rounded-xl p-5"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+        style={{
+          background: 'var(--surface)',
+          borderTop: '1px solid var(--border-faint)',
+          borderBottom: '1px solid var(--border-faint)',
+          padding: 'var(--s-5)',
+        }}
       >
-        <p style={{ fontSize: '0.78rem', color: 'var(--copper)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          🚧 Rebuilding
-        </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 8, lineHeight: 1.6 }}>
-          {plan}
-        </p>
+        <p className="t-caption" style={{ color: 'var(--accent)' }}>En chantier</p>
+        <p className="t-body" style={{ marginTop: 'var(--s-2)' }}>{plan}</p>
       </div>
     </div>
   )

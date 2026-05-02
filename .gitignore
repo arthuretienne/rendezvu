@@ -35,6 +35,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+.vercel.*
+
+# claude code tooling (not source)
+.claude/skills/
 
 # typescript
 *.tsbuildinfo

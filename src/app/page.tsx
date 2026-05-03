@@ -10,273 +10,188 @@ export default async function LandingPage() {
   if (session) redirect('/groups')
 
   return (
-    <main className="min-h-screen relative overflow-hidden" style={{ background: 'var(--bg)' }}>
-      {/* Ambient glow */}
-      <div
-        aria-hidden
+    <main style={{ background: 'var(--ink)', color: 'var(--text)', minHeight: '100vh' }}>
+      {/* Header */}
+      <header
         style={{
-          position: 'fixed',
-          top: '-10%',
-          right: '-10%',
-          width: 800,
-          height: 800,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(201,162,85,0.12) 0%, transparent 60%)',
-          pointerEvents: 'none',
-          filter: 'blur(40px)',
+          borderBottom: '1px solid var(--border-faint)',
         }}
-      />
-      <div
-        aria-hidden
-        style={{
-          position: 'fixed',
-          bottom: '-20%',
-          left: '-10%',
-          width: 700,
-          height: 700,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(201,162,85,0.06) 0%, transparent 60%)',
-          pointerEvents: 'none',
-          filter: 'blur(40px)',
-        }}
-      />
-
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-12 sm:py-20">
-        {/* Top bar */}
-        <nav className="flex items-center justify-between mb-16 sm:mb-24">
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.6rem',
-              color: 'var(--copper)',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-            }}
-          >
-            ◆ Rendezvu
-          </p>
-          <Link
-            href="/auth"
-            className="px-3.5 py-1.5 rounded-lg transition-all hover:bg-white/5"
-            style={{
-              color: 'var(--text-dim)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.85rem',
-              border: '1px solid var(--border)',
-            }}
-          >
-            Sign in
-          </Link>
-        </nav>
-
-        {/* Hero */}
-        <section className="mb-20">
-          <p
-            className="mb-4"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.65rem',
-              color: 'var(--copper)',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-            }}
-          >
-            ◆ Movie Rendez-vous
-          </p>
-          <h1
-            className="mb-6"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: '-0.01em',
-              color: 'var(--text)',
-            }}
-          >
-            Watch together —<br />
-            <span style={{ color: 'var(--copper)' }}>even apart.</span>
-          </h1>
-          <p
-            className="max-w-xl mb-10"
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 'clamp(1rem, 2.2vw, 1.25rem)',
-              color: 'var(--text-muted)',
-              lineHeight: 1.6,
-            }}
-          >
-            A shared movie list, a friendly draw, a place to talk about what you watched.
-            For long-distance friends, family, and lovers who want their next movie night to feel close again.
-          </p>
-          <div className="flex gap-3 flex-wrap">
-            <Link
-              href="/auth"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl transition-all hover:opacity-90"
-              style={{
-                background: 'var(--copper)',
-                color: '#000',
-                fontFamily: 'var(--font-display)',
-                fontSize: '1rem',
-                letterSpacing: '0.02em',
-                boxShadow: '0 8px 32px rgba(201,162,85,0.3)',
-              }}
-            >
-              Create your group →
-            </Link>
-            <Link
-              href="/auth"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl transition-all hover:bg-white/5"
-              style={{
-                color: 'var(--text-dim)',
-                border: '1px solid var(--border)',
-                fontFamily: 'var(--font-body)',
-                fontSize: '1rem',
-              }}
-            >
-              I have an account
-            </Link>
-          </div>
-        </section>
-
-        {/* Three feature blocks */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-20">
-          {[
-            {
-              k: '01',
-              title: 'A shared list',
-              body: 'Add movies from TMDB. Anyone in your group can drop in a film they want to watch — no more "what do we put on tonight?".',
-            },
-            {
-              k: '02',
-              title: 'A draw, not an argument',
-              body: 'When it\'s time, the app picks one. Random, vote, or veto — your group, your rules. The pick is the same on every screen, in real time.',
-            },
-            {
-              k: '03',
-              title: 'Reviews that feel intimate',
-              body: 'Rate it, write it, react to your friends\' takes. Spoilers stay hidden until you\'ve watched. Your reviews are private to your group by default.',
-            },
-          ].map(({ k, title, body }) => (
-            <div
-              key={k}
-              className="rounded-2xl p-5"
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <p
-                className="mb-3"
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.62rem',
-                  color: 'var(--copper)',
-                  letterSpacing: '0.12em',
-                }}
-              >
-                {k}
-              </p>
-              <h3
-                className="mb-2"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.15rem',
-                  fontWeight: 600,
-                  color: 'var(--text)',
-                }}
-              >
-                {title}
-              </h3>
-              <p
-                style={{
-                  fontFamily: 'var(--font-body)',
-                  fontSize: '0.88rem',
-                  color: 'var(--text-muted)',
-                  lineHeight: 1.6,
-                }}
-              >
-                {body}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {/* Closing pitch */}
-        <section
-          className="rounded-2xl p-8 mb-12"
+      >
+        <div
+          className="flex items-center justify-between"
           style={{
-            background: 'rgba(201,162,85,0.04)',
-            border: '1px solid rgba(201,162,85,0.2)',
+            maxWidth: 1280,
+            margin: '0 auto',
+            padding: 'var(--s-4) var(--s-5)',
           }}
         >
-          <h2
-            className="mb-3"
+          <Link
+            href="/"
             style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(1.4rem, 4vw, 2rem)',
-              fontWeight: 600,
+              fontFamily: 'var(--font-serif)',
+              fontWeight: 400,
+              fontSize: 22,
               color: 'var(--text)',
-              lineHeight: 1.2,
+              textDecoration: 'none',
             }}
           >
-            For relationships that don&apos;t fit in one room.
-          </h2>
-          <p
-            className="max-w-xl"
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: '1rem',
-              color: 'var(--text-muted)',
-              lineHeight: 1.6,
-            }}
-          >
-            Long-distance couples. Families spread across cities.
-            Friends who don&apos;t live together anymore.
-            Movies are an excuse — what you actually want is to keep talking.
-          </p>
-        </section>
+            Rendezvu
+          </Link>
+          <nav className="flex items-center" style={{ gap: 'var(--s-5)' }}>
+            <Link href="/about" className="t-caption hidden md:inline" style={{ color: 'var(--text-muted)', textDecoration: 'none', whiteSpace: 'nowrap' }}>À propos</Link>
+            <Link href="/how-it-works" className="t-caption hidden md:inline" style={{ color: 'var(--text-muted)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Comment ça marche</Link>
+            <Link href="/changelog" className="t-caption hidden lg:inline" style={{ color: 'var(--text-muted)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Changelog</Link>
+            <Link href="/auth" className="t-caption" style={{ color: 'var(--text)', textDecoration: 'none', whiteSpace: 'nowrap' }}>Se connecter</Link>
+          </nav>
+        </div>
+      </header>
 
-        {/* Footer */}
-        <footer
-          className="flex items-center justify-between flex-wrap gap-4"
-          style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}
-        >
-          <p
+      {/* Hero — typographique uniquement */}
+      <section
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: 'var(--s-8) var(--s-5) var(--s-7)',
+        }}
+      >
+        <div className="measure" style={{ marginInline: 0 }}>
+          <h1 className="t-display" style={{ marginBottom: 'var(--s-6)' }}>
+            «&nbsp;On regarde des films ensemble.<br />
+            Même quand on est loin.&nbsp;»
+          </h1>
+          <p className="t-lead" style={{ color: 'var(--text)', marginBottom: 'var(--s-6)', maxWidth: '64ch' }}>
+            Rendezvu est un rendez-vous cinéma pour amis, familles et couples à distance.
+            Une bucket list partagée, un tirage au sort un peu brutal, et après le film&nbsp;:
+            ce qu&apos;on en a pensé. Pas d&apos;algorithme, pas de feed, pas de pub — jamais.
+          </p>
+          <div className="flex items-center flex-wrap" style={{ gap: 'var(--s-5)' }}>
+            <Link href="/auth" className="btn btn-primary">
+              Créer un groupe →
+            </Link>
+            <span className="t-caption" style={{ color: 'var(--text-muted)' }}>
+              Gratuit. Pas de carte bancaire. On vit grâce aux dons.
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* "Voici comment ça marche, en cinq lignes." */}
+      <section
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '0 var(--s-5) var(--s-8)',
+        }}
+      >
+        <div className="measure" style={{ marginInline: 0 }}>
+          <h2 className="t-h2" style={{ marginBottom: 'var(--s-5)' }}>
+            Voici comment ça marche, en cinq lignes.
+          </h2>
+          <ol
+            className="t-body"
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.62rem',
-              color: 'var(--text-muted)',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
+              listStyle: 'decimal',
+              paddingLeft: 'var(--s-5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 'var(--s-3)',
+              marginBottom: 'var(--s-5)',
             }}
           >
-            Free · No ads inside the app · Donations welcome
+            <li>On crée un groupe — avec sa sœur, ses colocs, son ex-coloc devenu copain à Lisbonne.</li>
+            <li>Chacun ajoute des films à la bucket. On ne se met pas d&apos;accord, on accumule.</li>
+            <li>Le soir J, on tire au sort. La machine tranche. On accepte.</li>
+            <li>On regarde. Synchronisé si on veut, à son rythme sinon.</li>
+            <li>Après, on note. On commente. On garde une trace.</li>
+          </ol>
+          <Link href="/about" className="link t-body">Lire le manifeste →</Link>
+        </div>
+      </section>
+
+      {/* "On ne fait pas..." — anti-features */}
+      <section
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '0 var(--s-5) var(--s-8)',
+        }}
+      >
+        <div className="measure" style={{ marginInline: 0 }}>
+          <h2 className="t-h2" style={{ marginBottom: 'var(--s-5)' }}>
+            On ne fait pas...
+          </h2>
+          <ul
+            className="t-body"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 'var(--s-3) var(--s-5)',
+              listStyle: 'none',
+              padding: 0,
+              marginBottom: 'var(--s-4)',
+            }}
+          >
+            <li>On ne vend pas vos données.</li>
+            <li>On ne vous suit pas hors du site.</li>
+            <li>On ne met pas de pub.</li>
+            <li>On ne fait pas de feed public.</li>
+            <li>On ne gamifie pas.</li>
+            <li>On ne gate aucune fonction.</li>
+          </ul>
+          <p className="t-caption" style={{ color: 'var(--text-muted)' }}>
+            Si on change un jour, on l&apos;écrira ici en premier.
           </p>
-          <div className="flex gap-4">
-            <Link
-              href="/privacy"
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
-                color: 'var(--text-muted)',
-              }}
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/auth"
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
-                color: 'var(--copper)',
-              }}
-            >
-              Get started →
-            </Link>
-          </div>
-        </footer>
-      </div>
+        </div>
+      </section>
+
+      {/* Pied — 3 lignes */}
+      <footer
+        style={{
+          borderTop: '1px solid var(--border-faint)',
+          padding: 'var(--s-6) var(--s-5)',
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1280,
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 'var(--s-2)',
+          }}
+        >
+          <p className="t-caption" style={{ color: 'var(--text-muted)' }}>
+            <Link href="/about" className="link" style={{ color: 'inherit' }}>À propos</Link>
+            {' · '}
+            <Link href="/how-it-works" className="link" style={{ color: 'inherit' }}>Comment ça marche</Link>
+            {' · '}
+            <Link href="/help" className="link" style={{ color: 'inherit' }}>Aide</Link>
+            {' · '}
+            <Link href="/contact" className="link" style={{ color: 'inherit' }}>Contact</Link>
+          </p>
+          <p className="t-caption" style={{ color: 'var(--text-muted)' }}>
+            <Link href="/pricing" className="link" style={{ color: 'inherit' }}>Pricing</Link>
+            {' · '}
+            <Link href="/changelog" className="link" style={{ color: 'inherit' }}>Changelog</Link>
+            {' · '}
+            <Link href="/metrics" className="link" style={{ color: 'inherit' }}>Metrics</Link>
+            {' · '}
+            <Link href="/press" className="link" style={{ color: 'inherit' }}>Press</Link>
+          </p>
+          <p className="t-caption" style={{ color: 'var(--text-muted)' }}>
+            <Link href="/privacy" className="link" style={{ color: 'inherit' }}>Privacy</Link>
+            {' · '}
+            <Link href="/terms" className="link" style={{ color: 'inherit' }}>Terms</Link>
+            {' · '}
+            <Link href="/security" className="link" style={{ color: 'inherit' }}>Security</Link>
+            {' · '}
+            <Link href="/credits" className="link" style={{ color: 'inherit' }}>Credits</Link>
+          </p>
+          <p className="t-caption" style={{ color: 'var(--text-muted)', opacity: 0.7, marginTop: 'var(--s-3)' }}>
+            Rendezvu, fait quelque part entre Bruxelles et Marseille, 2026. Données films&nbsp;: TMDB.
+          </p>
+        </div>
+      </footer>
     </main>
   )
 }

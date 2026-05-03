@@ -175,6 +175,8 @@ function AuthForm() {
                 >
                   En créer un
                 </button>
+                {' · '}
+                <Link href="/auth/forgot" className="link">Oublié ?</Link>
               </>
             ) : (
               <>

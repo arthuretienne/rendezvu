@@ -33,8 +33,10 @@ There is no test runner configured. Type-check via `npx tsc --noEmit` if needed.
 - `NEXT_PUBLIC_TMDB_API_KEY` — TMDB v3 key, used by [src/lib/tmdb.ts](src/lib/tmdb.ts)
 - `RESEND_API_KEY` (optional) — if absent, [src/app/api/notify-watched/route.ts](src/app/api/notify-watched/route.ts) silently no-ops
 - `NEXT_PUBLIC_APP_URL` (optional) — used in transactional email links
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` — required for donation flows
+- `CRON_SECRET` — required in production: cron endpoints check `Authorization: Bearer $CRON_SECRET`. Without it set, anyone can hit `/api/cron/*`.
 
-`SETUP.md` contains real keys committed to the repo (personal project) — treat as authoritative for local dev.
+See [SECURITY.md](SECURITY.md) for the full pre-deploy checklist.
 
 ## Architecture
 
@@ -62,15 +64,11 @@ Always use the right client for the rendering context. Don't import the browser 
 
 ### Data model
 
-The schema evolved from single-tenant to multi-tenant:
+Authoritative schema lives in [supabase/migrations/](supabase/migrations/). The legacy `supabase-schema.sql`, `supabase-groups-migration.sql`, and `supabase-fix-trigger.sql` files were removed in May 2026 — do not look for them.
 
-- [supabase-schema.sql](supabase-schema.sql) — initial schema (`profiles`, `movies`, `reviews`, `messages`, `settings`).
-- [supabase-groups-migration.sql](supabase-groups-migration.sql) — adds `groups`, `group_members`, and a `group_id` foreign key on `movies` and `messages`. The legacy `settings` row is migrated into a default group.
-- [supabase-fix-trigger.sql](supabase-fix-trigger.sql) — patches the `handle_new_user` trigger that auto-creates `profiles` on signup.
+Group isolation **is** enforced by RLS via the `is_group_member(_group_id)` security-definer function. Policies on `messages`, `list_entries`, `watches`, `reviews`, `notification_prefs`, `invites`, and `donations` all key off membership or self-id. Still good practice to also add explicit `.eq('group_id', groupId)` filters in queries — they make intent obvious and act as defense-in-depth.
 
-When adding a query against `movies` or `messages`, **always filter by `group_id`** — RLS does not enforce group isolation today (policies allow any authenticated user to read everything). Group scoping is enforced in application code via the `/g/[id]/layout.tsx` membership check plus explicit `.eq('group_id', groupId)` filters.
-
-Realtime is enabled on `messages` (`alter publication supabase_realtime add table messages`). The chat page subscribes via the browser client.
+Realtime is enabled on `messages`. The chat page subscribes via the browser client.
 
 ### Domain types
 

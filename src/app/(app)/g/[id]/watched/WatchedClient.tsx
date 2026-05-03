@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { Star, Eye, EyeOff, MessageCircle, Crown, Film } from 'lucide-react'
+import { Eye, EyeOff, Star } from 'lucide-react'
 import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import { createClient } from '@/lib/supabase/client'
 import { getPosterUrl } from '@/lib/tmdb'
 import type { Group, Item, ListEntry, Profile, Review, Watch } from '@/lib/types'
@@ -13,8 +14,6 @@ type ReviewWithAuthor = Review & {
   author: Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'is_patron'>
 }
 type Member = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url' | 'is_patron'>
-
-const REACTION_EMOJIS = ['❤️', '🔥', '😂', '😭', '🤯', '👏']
 
 export default function WatchedClient({
   groupId,
@@ -34,10 +33,9 @@ export default function WatchedClient({
   const supabase = createClient()
   const [entries] = useState<EntryWithItem[]>(initialEntries)
   const [reviews, setReviews] = useState<ReviewWithAuthor[]>(initialReviews)
-  const [composing, setComposing] = useState<string | null>(null) // item_id we're composing for
+  const [composing, setComposing] = useState<string | null>(null)
   const [revealed, setRevealed] = useState<Set<string>>(new Set())
 
-  // Map of item_id → review[] for quick lookup
   const reviewsByItem = useMemo(() => {
     const m = new Map<string, ReviewWithAuthor[]>()
     for (const r of reviews) {
@@ -54,7 +52,6 @@ export default function WatchedClient({
     return m
   }, [members])
 
-  // Realtime: pick up new reviews from other members on watched items
   useEffect(() => {
     const itemIds = entries.map(e => e.item_id)
     if (itemIds.length === 0) return
@@ -96,7 +93,6 @@ export default function WatchedClient({
   }
 
   async function submitReview(itemId: string, payload: { rating: number; body: string; contains_spoilers: boolean; is_rewatch: boolean }) {
-    // Upsert: if user already has a review for this item, update; else insert
     const existing = reviews.find(r => r.item_id === itemId && r.user_id === userId)
     if (existing) {
       const { data, error } = await supabase
@@ -131,167 +127,164 @@ export default function WatchedClient({
         .single()
       if (error) throw error
       const author = memberById.get(userId) ?? {
-        id: userId, username: '?', display_name: 'You', avatar_url: null, is_patron: false,
+        id: userId, username: '?', display_name: 'Vous', avatar_url: null, is_patron: false,
       }
       setReviews(prev => [{ ...(data as Review), author }, ...prev])
     }
     setComposing(null)
   }
 
+  const earliest = entries.at(-1)?.watched_at
+  const monthLabel = earliest ? format(new Date(earliest), 'MMMM yyyy', { locale: fr }) : null
+
   return (
-    <div className="space-y-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-6)' }}>
       <header>
-        <p className="marquee">Watched</p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'var(--text)', fontWeight: 600 }}>
-          History & reviews
-        </h1>
+        <h1 className="t-h1">Ce qu&apos;on a vu ensemble.</h1>
+        <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+          {entries.length} {entries.length > 1 ? 'films' : 'film'}
+          {monthLabel ? `, depuis ${monthLabel}` : ''}.
+        </p>
       </header>
 
       {entries.length === 0 ? (
-        <div
-          className="rounded-xl p-6 text-center"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-            Nothing watched yet. Draw a film and mark it watched to start your history.
-          </p>
-        </div>
+        <p className="t-body" style={{ color: 'var(--text-muted)' }}>
+          Rien encore. Tirez un film, marquez-le comme vu, et l&apos;histoire commence.
+        </p>
       ) : (
-        <div className="space-y-5">
-          {entries.map(entry => {
+        <div>
+          {entries.map((entry, idx) => {
             const itemReviews = reviewsByItem.get(entry.item_id) ?? []
             const myReview = itemReviews.find(r => r.user_id === userId)
-            const watchersExceptMe = entry.watches.filter(w => w.user_id !== userId)
+            const avgRating = itemReviews.length > 0
+              ? itemReviews.reduce((s, r) => s + r.rating, 0) / itemReviews.length
+              : null
             return (
               <article
                 key={entry.id}
-                className="rounded-2xl overflow-hidden"
-                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                style={{
+                  paddingBlock: 'var(--s-6)',
+                  borderTop: idx === 0 ? '1px solid var(--border-faint)' : 'none',
+                  borderBottom: '1px solid var(--border-faint)',
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 96px) 1fr',
+                  gap: 'var(--s-5)',
+                }}
               >
-                <div className="flex gap-3 p-3">
+                <div style={{ aspectRatio: '2/3', background: 'var(--surface)' }}>
                   {entry.item.poster_path ? (
                     <Image
                       src={getPosterUrl(entry.item.poster_path)!}
                       alt={entry.item.title}
-                      width={80}
-                      height={120}
-                      className="rounded flex-shrink-0 object-cover"
+                      width={96}
+                      height={144}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                     />
-                  ) : (
-                    <div className="w-20 h-[120px] rounded flex items-center justify-center flex-shrink-0" style={{ background: 'var(--surface-2)' }}>
-                      <Film size={24} style={{ color: 'var(--text-muted)' }} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', color: 'var(--text)', fontWeight: 600 }}>
-                      {entry.item.title}
-                    </h2>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>
-                      {entry.item.year ?? '—'}
-                      {entry.item.runtime ? ` · ${entry.item.runtime}min` : ''}
-                      {entry.watched_at ? ` · Watched ${format(new Date(entry.watched_at), 'MMM d')}` : ''}
-                    </p>
-                    {watchersExceptMe.length > 0 && (
-                      <p className="mt-2" style={{ fontSize: '0.7rem', color: 'var(--copper)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
-                        ✓ {watchersExceptMe.map(w => memberById.get(w.user_id)?.display_name).filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                    {!userHasWatched(entry) && (
-                      <p className="mt-1" style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-                        You haven&apos;t watched this yet.
-                      </p>
-                    )}
-                  </div>
+                  ) : null}
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border)' }}>
-                  {itemReviews.map(review => {
-                    const blur = shouldBlur(entry, review)
-                    return (
-                      <div key={review.id} className="px-4 py-3" style={{ borderTop: '1px solid var(--border)' }}>
-                        <div className="flex items-start gap-2.5">
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)', fontSize: '0.65rem', fontWeight: 700 }}
-                          >
-                            {review.author.display_name[0]?.toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span style={{ color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.85rem' }}>
-                                {review.author.display_name}
-                              </span>
-                              {review.author.is_patron && <Crown size={10} style={{ color: 'var(--copper)' }} />}
-                              <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,162,85,0.1)', color: 'var(--copper)', fontSize: '0.66rem', fontFamily: 'var(--font-mono)' }}>
-                                <Star size={9} fill="currentColor" /> {review.rating}/10
-                              </span>
-                              {review.is_rewatch && (
-                                <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                                  Rewatch
-                                </span>
-                              )}
+                <div style={{ minWidth: 0 }}>
+                  <h2 className="t-h2" style={{ marginBottom: 'var(--s-2)' }}>
+                    {entry.item.title}
+                    {entry.item.year ? ` (${entry.item.year})` : ''}
+                  </h2>
+                  <p className="t-caption" style={{ color: 'var(--text-muted)', marginBottom: 'var(--s-4)' }}>
+                    {entry.watched_at && (
+                      <>Vu le {format(new Date(entry.watched_at), 'd MMMM', { locale: fr })}</>
+                    )}
+                    {avgRating !== null && (
+                      <> · Note du groupe&nbsp;: <span style={{ color: 'var(--accent)' }}>★</span> {avgRating.toFixed(1)}/10</>
+                    )}
+                  </p>
+
+                  {/* Reviews per member */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-3)' }}>
+                    {itemReviews.map(review => {
+                      const blur = shouldBlur(entry, review)
+                      return (
+                        <div key={review.id}>
+                          <p className="t-body" style={{ color: 'var(--text)' }}>
+                            <span style={{ fontWeight: 500 }}>
+                              {review.user_id === userId ? 'Vous' : review.author.display_name}
+                            </span>
+                            <span className="t-caption" style={{ color: 'var(--text-muted)', marginLeft: 'var(--s-2)' }}>
+                              <span style={{ color: 'var(--accent)' }}>★</span> {review.rating}/10
+                              {review.is_rewatch ? ' · revisionnage' : ''}
                               {review.user_id === userId && (
+                                <>
+                                  {' · '}
+                                  <button
+                                    onClick={() => setComposing(entry.item_id)}
+                                    className="link"
+                                    style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', cursor: 'pointer' }}
+                                  >
+                                    modifier
+                                  </button>
+                                </>
+                              )}
+                            </span>
+                          </p>
+                          {review.body && (
+                            <div style={{ marginTop: 'var(--s-1)', position: 'relative' }}>
+                              <p
+                                className="t-body"
+                                style={{
+                                  color: blur ? 'transparent' : 'var(--text-muted)',
+                                  textShadow: blur ? '0 0 12px rgba(232,228,217,0.5)' : 'none',
+                                  whiteSpace: 'pre-wrap',
+                                }}
+                              >
+                                {review.body}
+                              </p>
+                              {blur && (
                                 <button
-                                  onClick={() => setComposing(entry.item_id)}
-                                  className="ml-auto px-2 py-0.5 rounded transition-all hover:bg-white/5 cursor-pointer"
-                                  style={{ color: 'var(--text-muted)', fontSize: '0.66rem', fontFamily: 'var(--font-body)' }}
+                                  onClick={() => setRevealed(prev => new Set(prev).add(review.id))}
+                                  style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--accent)',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--s-2)',
+                                    fontSize: 13,
+                                  }}
                                 >
-                                  Edit
+                                  <EyeOff size={13} /> Masqué — cliquer pour révéler
+                                </button>
+                              )}
+                              {!blur && revealed.has(review.id) && (
+                                <button
+                                  onClick={() => setRevealed(prev => {
+                                    const n = new Set(prev); n.delete(review.id); return n
+                                  })}
+                                  className="t-caption"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: 0,
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    marginTop: 'var(--s-1)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--s-1)',
+                                  }}
+                                >
+                                  <Eye size={11} /> Masquer à nouveau
                                 </button>
                               )}
                             </div>
-                            {review.body && (
-                              <div className="relative mt-1.5">
-                                <p
-                                  className="whitespace-pre-wrap"
-                                  style={{
-                                    color: blur ? 'transparent' : 'var(--text-muted)',
-                                    textShadow: blur ? '0 0 12px rgba(255,255,255,0.5)' : 'none',
-                                    fontSize: '0.85rem',
-                                    fontFamily: 'var(--font-body)',
-                                    lineHeight: 1.5,
-                                  }}
-                                >
-                                  {review.body}
-                                </p>
-                                {blur && (
-                                  <button
-                                    onClick={() => setRevealed(prev => new Set(prev).add(review.id))}
-                                    className="absolute inset-0 flex items-center justify-center gap-1.5 transition-all hover:bg-black/10 cursor-pointer rounded"
-                                    style={{ color: 'var(--copper)', fontSize: '0.78rem', fontFamily: 'var(--font-body)', backdropFilter: 'blur(6px)' }}
-                                  >
-                                    <EyeOff size={13} />
-                                    Hidden — tap to reveal
-                                  </button>
-                                )}
-                                {!blur && revealed.has(review.id) && (
-                                  <button
-                                    onClick={() => setRevealed(prev => {
-                                      const n = new Set(prev); n.delete(review.id); return n
-                                    })}
-                                    className="mt-1 flex items-center gap-1 transition-all hover:opacity-70 cursor-pointer"
-                                    style={{ color: 'var(--text-muted)', fontSize: '0.66rem' }}
-                                  >
-                                    <Eye size={11} /> Hide again
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                            <ReactionsBar
-                              reviewId={review.id}
-                              userId={userId}
-                              supabase={supabase}
-                            />
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
 
-                  {/* Compose review CTA */}
                   {composing === entry.item_id ? (
                     <ReviewComposer
-                      entryItemId={entry.item_id}
                       existing={myReview}
                       onSubmit={async data => {
                         try { await submitReview(entry.item_id, data) }
@@ -303,12 +296,23 @@ export default function WatchedClient({
                     !myReview && userHasWatched(entry) && (
                       <button
                         onClick={() => setComposing(entry.item_id)}
-                        className="w-full px-4 py-2.5 transition-all hover:bg-white/5 cursor-pointer"
-                        style={{ borderTop: '1px solid var(--border)', color: 'var(--copper)', fontFamily: 'var(--font-body)', fontSize: '0.85rem' }}
+                        className="link t-caption"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          marginTop: 'var(--s-3)',
+                          cursor: 'pointer',
+                        }}
                       >
-                        + Write a review
+                        + Écrire ce que vous en avez pensé
                       </button>
                     )
+                  )}
+                  {!userHasWatched(entry) && (
+                    <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
+                      Vous ne l&apos;avez pas encore vu.
+                    </p>
                   )}
                 </div>
               </article>
@@ -321,12 +325,10 @@ export default function WatchedClient({
 }
 
 function ReviewComposer({
-  entryItemId,
   existing,
   onSubmit,
   onCancel,
 }: {
-  entryItemId: string
   existing?: ReviewWithAuthor
   onSubmit: (data: { rating: number; body: string; contains_spoilers: boolean; is_rewatch: boolean }) => Promise<void>
   onCancel: () => void
@@ -345,182 +347,77 @@ function ReviewComposer({
         await onSubmit({ rating, body: body.trim(), contains_spoilers: containsSpoilers, is_rewatch: isRewatch })
         setSubmitting(false)
       }}
-      className="px-4 py-3 space-y-3"
-      style={{ borderTop: '1px solid var(--border)' }}
+      style={{
+        marginTop: 'var(--s-4)',
+        paddingTop: 'var(--s-4)',
+        borderTop: '1px solid var(--border-faint)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--s-4)',
+      }}
     >
-      <div className="flex items-center gap-2 flex-wrap">
-        <label style={{ fontSize: '0.66rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Rating
-        </label>
-        <div className="flex items-center gap-1">
+      <div className="field">
+        <label className="field-label">Note (sur 10)</label>
+        <div className="flex" style={{ gap: 'var(--s-1)', flexWrap: 'wrap', marginTop: 'var(--s-1)' }}>
           {[1,2,3,4,5,6,7,8,9,10].map(n => (
             <button
               key={n}
               type="button"
               onClick={() => setRating(n)}
-              className="w-6 h-6 rounded text-xs transition-all cursor-pointer"
+              className="star-btn"
               style={{
-                background: rating >= n ? 'var(--copper)' : 'transparent',
-                color: rating >= n ? '#000' : 'var(--text-muted)',
-                border: `1px solid ${rating >= n ? 'var(--copper)' : 'var(--border)'}`,
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
+                background: 'none',
+                border: 'none',
+                padding: 4,
+                cursor: 'pointer',
+                color: rating >= n ? 'var(--accent)' : 'var(--text-muted)',
               }}
-              aria-label={`Rating ${n}`}
+              aria-label={`Note ${n}`}
             >
-              {n}
+              <Star size={20} fill={rating >= n ? 'currentColor' : 'none'} strokeWidth={1.5} />
             </button>
           ))}
         </div>
       </div>
-      <textarea
-        value={body}
-        onChange={e => setBody(e.target.value)}
-        rows={3}
-        placeholder="What did you think? (optional)"
-        className="w-full px-3 py-2 rounded-lg outline-none resize-none"
-        style={{
-          background: 'var(--surface-2)',
-          border: '1px solid var(--border)',
-          color: 'var(--text)',
-          fontFamily: 'var(--font-body)',
-          fontSize: '0.85rem',
-        }}
-      />
-      <div className="flex items-center gap-4 flex-wrap">
-        <label className="flex items-center gap-1.5 cursor-pointer" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+
+      <div className="field">
+        <label className="field-label" htmlFor="review-body">Ce que vous en avez pensé</label>
+        <textarea
+          id="review-body"
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          rows={3}
+          placeholder="(facultatif)"
+          className="textarea"
+        />
+      </div>
+
+      <div className="flex items-center" style={{ gap: 'var(--s-5)', flexWrap: 'wrap' }}>
+        <label className="t-caption flex items-center" style={{ gap: 'var(--s-2)', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={containsSpoilers}
             onChange={e => setContainsSpoilers(e.target.checked)}
           />
-          Contains spoilers
+          Contient des spoilers
         </label>
-        <label className="flex items-center gap-1.5 cursor-pointer" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+        <label className="t-caption flex items-center" style={{ gap: 'var(--s-2)', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={isRewatch}
             onChange={e => setIsRewatch(e.target.checked)}
           />
-          Rewatch
+          Revisionnage
         </label>
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={submitting}
-            className="px-3 py-1.5 rounded-lg transition-all hover:bg-white/5 cursor-pointer"
-            style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}
-          >
-            Cancel
+        <div className="flex" style={{ gap: 'var(--s-3)', marginLeft: 'auto' }}>
+          <button type="button" onClick={onCancel} disabled={submitting} className="btn btn-ghost">
+            Annuler
           </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-3 py-1.5 rounded-lg transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
-            style={{ background: 'var(--copper)', color: '#000', fontSize: '0.8rem', fontFamily: 'var(--font-display)' }}
-          >
-            {submitting ? '…' : existing ? 'Save' : 'Post'}
+          <button type="submit" disabled={submitting} className="btn btn-primary">
+            {submitting ? '…' : existing ? 'Enregistrer' : 'Publier'}
           </button>
         </div>
       </div>
     </form>
-  )
-}
-
-function ReactionsBar({
-  reviewId,
-  userId,
-  supabase,
-}: {
-  reviewId: string
-  userId: string
-  supabase: ReturnType<typeof createClient>
-}) {
-  const [counts, setCounts] = useState<Record<string, number>>({})
-  const [mine, setMine] = useState<Set<string>>(new Set())
-  const [picking, setPicking] = useState(false)
-
-  useEffect(() => {
-    let active = true
-    supabase
-      .from('review_reactions')
-      .select('emoji, user_id')
-      .eq('review_id', reviewId)
-      .then(({ data }) => {
-        if (!active || !data) return
-        const c: Record<string, number> = {}
-        const m = new Set<string>()
-        for (const r of data as { emoji: string; user_id: string }[]) {
-          c[r.emoji] = (c[r.emoji] ?? 0) + 1
-          if (r.user_id === userId) m.add(r.emoji)
-        }
-        setCounts(c)
-        setMine(m)
-      })
-    return () => { active = false }
-  }, [reviewId, userId, supabase])
-
-  async function toggle(emoji: string) {
-    if (mine.has(emoji)) {
-      setMine(prev => { const n = new Set(prev); n.delete(emoji); return n })
-      setCounts(prev => ({ ...prev, [emoji]: Math.max(0, (prev[emoji] ?? 1) - 1) }))
-      await supabase.from('review_reactions').delete().eq('review_id', reviewId).eq('user_id', userId).eq('emoji', emoji)
-    } else {
-      setMine(prev => new Set(prev).add(emoji))
-      setCounts(prev => ({ ...prev, [emoji]: (prev[emoji] ?? 0) + 1 }))
-      await supabase.from('review_reactions').insert({ review_id: reviewId, user_id: userId, emoji })
-    }
-    setPicking(false)
-  }
-
-  const activeEmojis = Object.entries(counts).filter(([, n]) => n > 0)
-
-  return (
-    <div className="mt-2 flex items-center gap-1 flex-wrap">
-      {activeEmojis.map(([emoji, n]) => (
-        <button
-          key={emoji}
-          onClick={() => toggle(emoji)}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all hover:bg-white/5 cursor-pointer"
-          style={{
-            background: mine.has(emoji) ? 'rgba(201,162,85,0.15)' : 'var(--surface-2)',
-            border: `1px solid ${mine.has(emoji) ? 'var(--copper)' : 'var(--border)'}`,
-            fontSize: '0.7rem',
-          }}
-        >
-          {emoji} <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}>{n}</span>
-        </button>
-      ))}
-      {!picking ? (
-        <button
-          onClick={() => setPicking(true)}
-          className="p-0.5 px-1.5 rounded transition-all hover:bg-white/5 cursor-pointer"
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.7rem' }}
-        >
-          + 😊
-        </button>
-      ) : (
-        <div className="flex gap-1 px-2 py-1 rounded" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-          {REACTION_EMOJIS.map(e => (
-            <button
-              key={e}
-              onClick={() => toggle(e)}
-              className="transition-all hover:scale-110 cursor-pointer"
-              style={{ fontSize: '0.95rem' }}
-            >
-              {e}
-            </button>
-          ))}
-          <button
-            onClick={() => setPicking(false)}
-            className="px-1 transition-all hover:opacity-70 cursor-pointer"
-            style={{ color: 'var(--text-muted)', fontSize: '0.65rem' }}
-          >
-            ×
-          </button>
-        </div>
-      )}
-    </div>
   )
 }

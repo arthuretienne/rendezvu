@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { Plus, Search, Trash2, Film, X } from 'lucide-react'
+import { Search, Trash2, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { searchMovies, getMovieDetails, getPosterUrl, upsertMovieItem, type TmdbMovie } from '@/lib/tmdb'
 import type { Item, ListEntry } from '@/lib/types'
@@ -27,7 +27,6 @@ export default function BucketClient({
   const [error, setError] = useState('')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Debounced TMDB search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (query.trim().length < 2) {
@@ -45,7 +44,6 @@ export default function BucketClient({
     }
   }, [query])
 
-  // Realtime: pick up entries other members add/remove
   useEffect(() => {
     const channel = supabase
       .channel(`bucket-${groupId}`)
@@ -78,12 +76,11 @@ export default function BucketClient({
   async function addMovie(tmdb: TmdbMovie) {
     setAdding(tmdb.id)
     setError('')
-    // Pull details for runtime + genres
     const details = await getMovieDetails(tmdb.id)
     const enriched = { ...tmdb, ...(details ?? {}) }
     const item = await upsertMovieItem(supabase, enriched)
     if (!item) {
-      setError('Could not save the movie metadata. Try again.')
+      setError('Impossible de sauvegarder le film. Réessayez.')
       setAdding(null)
       return
     }
@@ -95,7 +92,7 @@ export default function BucketClient({
     setAdding(null)
     if (insertErr) {
       if (insertErr.code === '23505') {
-        setError(`"${tmdb.title}" is already in this bucket.`)
+        setError(`«&nbsp;${tmdb.title}&nbsp;» est déjà dans la bucket.`)
       } else {
         setError(insertErr.message)
       }
@@ -103,7 +100,6 @@ export default function BucketClient({
     }
     if (entry) {
       setEntries(prev => [{ ...(entry as ListEntry), item }, ...prev])
-      // Clear search to encourage adding more
       setQuery('')
       setResults([])
     }
@@ -120,35 +116,33 @@ export default function BucketClient({
   }
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s-6)' }}>
       <header>
-        <p className="marquee">Bucket</p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: 'var(--text)', fontWeight: 600 }}>
-          Add movies to watch
-        </h1>
+        <h1 className="t-h1">La bucket.</h1>
+        <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+          {entries.length} {entries.length > 1 ? 'films accumulés' : 'film accumulé'}.
+        </p>
       </header>
 
       {/* Search */}
-      <div
-        className="rounded-xl px-3 py-2"
-        style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-      >
-        <div className="flex items-center gap-2">
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
+      <div className="field">
+        <div className="flex items-center" style={{ gap: 'var(--s-2)', borderBottom: '1px solid var(--border-faint)' }}>
+          <Search size={16} style={{ color: 'var(--text-muted)' }} />
           <input
             value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search a movie on TMDB…"
-            className="flex-1 bg-transparent outline-none"
-            style={{ color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Chercher un film sur TMDB…"
+            className="input"
+            style={{ borderBottom: 'none' }}
           />
           {query && (
             <button
               onClick={() => { setQuery(''); setResults([]) }}
-              className="p-1 rounded transition-all hover:bg-white/5 cursor-pointer"
-              style={{ color: 'var(--text-muted)' }}
+              className="btn btn-ghost"
+              style={{ height: 32 }}
+              aria-label="Effacer"
             >
-              <X size={13} />
+              <X size={14} />
             </button>
           )}
         </div>
@@ -156,23 +150,34 @@ export default function BucketClient({
 
       {/* Search results */}
       {(searching || results.length > 0) && (
-        <div
-          className="rounded-xl p-2 space-y-1"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
+        <div role="list">
           {searching && (
-            <p className="px-3 py-2" style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-              Searching…
+            <p className="t-caption" style={{ color: 'var(--text-muted)', padding: 'var(--s-3) 0' }}>
+              Recherche…
             </p>
           )}
-          {results.map(m => {
-            const inBucket = entries.some(e => e.item.tmdb_id === m.id)
+          {results.map((m) => {
+            const inBucket = entries.some((e) => e.item.tmdb_id === m.id)
             return (
               <button
                 key={m.id}
                 onClick={() => !inBucket && addMovie(m)}
                 disabled={inBucket || adding === m.id}
-                className="w-full flex items-center gap-3 p-2 rounded-lg transition-all hover:bg-white/5 disabled:opacity-50 cursor-pointer text-left"
+                role="listitem"
+                className="flex items-center"
+                style={{
+                  width: '100%',
+                  gap: 'var(--s-4)',
+                  padding: 'var(--s-3) 0',
+                  borderBottom: '1px solid var(--border-faint)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: 'none',
+                  borderLeft: 'none',
+                  borderRight: 'none',
+                  cursor: inBucket ? 'default' : 'pointer',
+                  textAlign: 'left',
+                }}
               >
                 {m.poster_path ? (
                   <Image
@@ -180,32 +185,22 @@ export default function BucketClient({
                     alt={m.title}
                     width={36}
                     height={54}
-                    className="rounded object-cover flex-shrink-0"
+                    style={{ objectFit: 'cover', flexShrink: 0, background: 'var(--surface)' }}
                   />
                 ) : (
-                  <div className="w-9 h-[54px] rounded flex items-center justify-center flex-shrink-0" style={{ background: 'var(--surface-2)' }}>
-                    <Film size={14} style={{ color: 'var(--text-muted)' }} />
-                  </div>
+                  <div style={{ width: 36, height: 54, background: 'var(--surface)', flexShrink: 0 }} />
                 )}
-                <div className="flex-1 min-w-0">
-                  <p style={{ color: 'var(--text)', fontSize: '0.88rem', fontFamily: 'var(--font-body)' }}>
-                    {m.title}
-                  </p>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p className="t-body" style={{ color: 'var(--text)' }}>{m.title}</p>
+                  <p className="t-caption t-tnum" style={{ color: 'var(--text-muted)' }}>
                     {m.release_date?.slice(0, 4) ?? '—'}
                   </p>
                 </div>
                 {inBucket ? (
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.66rem', fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}>
-                    In bucket
-                  </span>
+                  <span className="badge badge-dim">Déjà dans la bucket</span>
                 ) : (
-                  <span
-                    className="flex items-center gap-1 px-2 py-1 rounded"
-                    style={{ background: 'var(--copper)', color: '#000', fontSize: '0.7rem' }}
-                  >
-                    <Plus size={11} />
-                    {adding === m.id ? '…' : 'Add'}
+                  <span className="t-caption" style={{ color: 'var(--accent)' }}>
+                    {adding === m.id ? '…' : 'Ajouter →'}
                   </span>
                 )}
               </button>
@@ -215,30 +210,25 @@ export default function BucketClient({
       )}
 
       {error && (
-        <p style={{ color: '#fca5a5', fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>{error}</p>
+        <p className="t-caption" style={{ color: 'var(--accent)' }}>{error}</p>
       )}
 
-      {/* Bucket list */}
+      {/* Bucket grid */}
       <section>
-        <p
-          className="mb-2"
-          style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}
-        >
-          {entries.length} in queue
-        </p>
         {entries.length === 0 ? (
-          <div
-            className="rounded-xl p-6 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-              Empty for now — search above to add your first film.
-            </p>
-          </div>
+          <p className="t-body" style={{ color: 'var(--text-muted)' }}>
+            Vide pour l’instant — cherchez un film ci-dessus pour démarrer.
+          </p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {entries.map(e => (
-              <BucketCard key={e.id} entry={e} onRemove={() => removeEntry(e.id)} />
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+              gap: 'var(--s-4)',
+            }}
+          >
+            {entries.map((e) => (
+              <BucketPoster key={e.id} entry={e} onRemove={() => removeEntry(e.id)} />
             ))}
           </div>
         )}
@@ -247,50 +237,55 @@ export default function BucketClient({
   )
 }
 
-function BucketCard({ entry, onRemove }: { entry: EntryWithItem; onRemove: () => void }) {
+function BucketPoster({ entry, onRemove }: { entry: EntryWithItem; onRemove: () => void }) {
   const poster = getPosterUrl(entry.item.poster_path)
   const isSelected = entry.status === 'selected'
   return (
-    <div
-      className="relative rounded-xl overflow-hidden"
-      style={{ background: 'var(--surface)', border: `1px solid ${isSelected ? 'var(--copper)' : 'var(--border)'}` }}
-    >
-      <div className="aspect-[2/3] relative">
-        {poster ? (
-          <Image src={poster} alt={entry.item.title} fill className="object-cover" sizes="(min-width: 640px) 200px, 50vw" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'var(--surface-2)' }}>
-            <Film size={28} style={{ color: 'var(--text-muted)' }} />
-          </div>
-        )}
-        {isSelected && (
-          <span
-            className="absolute top-2 left-2 px-2 py-0.5 rounded"
-            style={{ background: 'var(--copper)', color: '#000', fontSize: '0.55rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em', textTransform: 'uppercase' }}
-          >
-            Selected
-          </span>
-        )}
-        <button
-          onClick={onRemove}
-          className="absolute top-2 right-2 p-1 rounded-full transition-all hover:opacity-100 cursor-pointer"
-          style={{ background: 'rgba(0,0,0,0.6)', color: 'white', opacity: 0.7 }}
-          title="Remove"
-        >
-          <Trash2 size={11} />
-        </button>
-      </div>
-      <div className="p-2">
-        <p
-          className="line-clamp-1"
-          style={{ color: 'var(--text)', fontSize: '0.82rem', fontFamily: 'var(--font-body)' }}
-        >
-          {entry.item.title}
-        </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.66rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em', marginTop: 1 }}>
+    <div className="poster">
+      {poster ? (
+        <Image
+          src={poster}
+          alt={entry.item.title}
+          fill
+          sizes="(min-width: 640px) 200px, 50vw"
+          style={{ objectFit: 'cover' }}
+        />
+      ) : null}
+      <div className="poster-overlay">
+        <p className="t-h3" style={{ color: 'var(--text)' }}>{entry.item.title}</p>
+        <p className="t-caption t-tnum" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-1)' }}>
           {entry.item.year ?? '—'}
         </p>
       </div>
+      {isSelected && (
+        <span
+          className="badge badge-accent"
+          style={{ position: 'absolute', top: 'var(--s-2)', left: 'var(--s-2)', background: 'var(--ink)' }}
+        >
+          Tiré
+        </span>
+      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); e.preventDefault(); onRemove() }}
+        title="Retirer"
+        style={{
+          position: 'absolute',
+          top: 'var(--s-2)',
+          right: 'var(--s-2)',
+          background: 'color-mix(in oklab, var(--ink) 70%, transparent)',
+          color: 'var(--text)',
+          border: 'none',
+          width: 28,
+          height: 28,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          borderRadius: 2,
+        }}
+      >
+        <Trash2 size={13} />
+      </button>
     </div>
   )
 }

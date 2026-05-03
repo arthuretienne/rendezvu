@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Upload, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Upload } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { searchMovies, getMovieDetails, upsertMovieItem } from '@/lib/tmdb'
 import { parseLetterboxdCsv, type LetterboxdRow } from '@/lib/letterboxd'
@@ -33,13 +33,13 @@ export default function ImportClient({ userId }: { userId: string }) {
       const text = await file.text()
       const parsed = parseLetterboxdCsv(text)
       if (parsed.length === 0) {
-        setError('No rows recognized. Make sure this is a Letterboxd CSV (ratings.csv, watched.csv, or diary.csv).')
+        setError('Aucune ligne reconnue. Vérifiez qu\'il s\'agit bien d\'un CSV Letterboxd (ratings.csv, watched.csv, ou diary.csv).')
         return
       }
       setRows(parsed)
       setStatus('parsed')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not parse the file.')
+      setError(err instanceof Error ? err.message : 'Impossible de lire le fichier.')
     }
   }
 
@@ -61,22 +61,17 @@ export default function ImportClient({ userId }: { userId: string }) {
         current: row.name,
       })
       try {
-        // Resolve via TMDB search
         const yearStr = row.year ? String(row.year) : undefined
         const results = await searchMovies(row.name, yearStr)
-        // Prefer exact-year match if available
         const best = (yearStr && results.find(r => r.release_date?.startsWith(yearStr))) || results[0]
         if (!best) { failed++; continue }
 
-        // Get full details for runtime/genres
         const details = await getMovieDetails(best.id)
         const enriched = { ...best, ...(details ?? {}) }
 
-        // Upsert into items
         const item = await upsertMovieItem(supabase, enriched)
         if (!item) { failed++; continue }
 
-        // If rating, add a review (skip if user already has one for this item)
         if (row.rating != null) {
           const { data: existing } = await supabase
             .from('reviews')
@@ -102,12 +97,11 @@ export default function ImportClient({ userId }: { userId: string }) {
             imported++
           }
         } else {
-          imported++  // counted as imported even if no rating (item created)
+          imported++
         }
       } catch {
         failed++
       }
-      // Light rate-limiting (TMDB: 40 req/10s)
       if (i % 5 === 4) await new Promise(r => setTimeout(r, 500))
     }
 
@@ -116,159 +110,166 @@ export default function ImportClient({ userId }: { userId: string }) {
   }
 
   return (
-    <main className="max-w-2xl mx-auto px-4 py-8">
-      <nav className="mb-8">
-        <Link
-          href="/settings"
-          className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5"
-          style={{ color: 'var(--text-muted)' }}
+    <main style={{ background: 'var(--ink)', minHeight: '100vh' }}>
+      <header style={{ borderBottom: '1px solid var(--border-faint)' }}>
+        <div
+          className="flex items-center justify-between"
+          style={{ maxWidth: 1280, margin: '0 auto', padding: 'var(--s-4) var(--s-5)' }}
         >
-          <ArrowLeft size={13} />
-          <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>Settings</span>
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <p className="marquee">Import</p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--text)', fontWeight: 600 }}>
-          Bring your Letterboxd history
-        </h1>
-        <p className="mt-2" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)', lineHeight: 1.6 }}>
-          Letterboxd lets you export your data as a ZIP. Upload <code>ratings.csv</code>, <code>watched.csv</code>,
-          or <code>diary.csv</code> and we&apos;ll match each film to TMDB and create your reviews here.
-          <br />
-          <a
-            href="https://letterboxd.com/settings/data/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'var(--copper)' }}
+          <Link
+            href="/settings"
+            className="t-caption flex items-center"
+            style={{ gap: 'var(--s-2)', color: 'var(--text-muted)', textDecoration: 'none' }}
           >
-            Get your export from Letterboxd →
-          </a>
-        </p>
+            <ArrowLeft size={14} /> Paramètres
+          </Link>
+          <Link
+            href="/"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontWeight: 400,
+              fontSize: 22,
+              color: 'var(--text)',
+              textDecoration: 'none',
+            }}
+          >
+            Rendezvu
+          </Link>
+          <span style={{ width: 80 }} />
+        </div>
       </header>
 
-      {error && (
-        <div
-          className="rounded-xl p-3 mb-5 flex items-start gap-2"
-          style={{ background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)' }}
-        >
-          <AlertCircle size={14} style={{ color: '#fca5a5', marginTop: 2 }} />
-          <p style={{ color: '#fca5a5', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>{error}</p>
-        </div>
-      )}
-
-      {status === 'idle' && (
-        <label
-          className="block rounded-xl p-8 text-center cursor-pointer transition-all hover:bg-white/5"
-          style={{ background: 'var(--surface)', border: '2px dashed var(--border)' }}
-        >
-          <Upload size={28} style={{ color: 'var(--copper)', margin: '0 auto 12px' }} />
-          <p style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 500 }}>
-            Click to choose a CSV
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: 'var(--s-7) var(--s-5)' }}>
+        <header style={{ marginBottom: 'var(--s-6)' }}>
+          <h1 className="t-h1">Importer votre Letterboxd.</h1>
+          <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
+            Letterboxd vous laisse exporter vos données en ZIP. Téléversez <code>ratings.csv</code>, <code>watched.csv</code> ou <code>diary.csv</code> — on cherche chaque film sur TMDB et on crée vos avis ici.
           </p>
-          <p className="mt-1" style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>
-            ratings.csv, watched.csv, or diary.csv from your Letterboxd export
-          </p>
-          <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
-        </label>
-      )}
-
-      {status === 'parsed' && (
-        <div
-          className="rounded-xl p-5"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--copper)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            ◆ Ready to import
-          </p>
-          <h2 className="mt-1" style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: 'var(--text)', fontWeight: 600 }}>
-            {rows.length} films found
-          </h2>
-          <p className="mt-1 mb-4" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-            We&apos;ll search TMDB for each, dedupe against your existing items, and skip duplicates of reviews you&apos;ve already written here.
-            This can take a few minutes for large libraries (rate-limited to TMDB).
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={runImport}
-              className="px-5 py-2 rounded-lg transition-all hover:opacity-90 cursor-pointer"
-              style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)', fontSize: '0.9rem' }}
+          <p className="t-body" style={{ marginTop: 'var(--s-3)' }}>
+            <a
+              href="https://letterboxd.com/settings/data/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link"
             >
-              Start import
-            </button>
-            <button
-              onClick={() => { setStatus('idle'); setRows([]) }}
-              className="px-4 py-2 rounded-lg transition-all hover:bg-white/5 cursor-pointer"
-              style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {status === 'running' && progress && (
-        <div
-          className="rounded-xl p-5 space-y-3"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--copper)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            ◆ Importing… {progress.done} / {progress.total}
+              Récupérer votre export Letterboxd →
+            </a>
           </p>
-          {progress.current && (
-            <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: '0.85rem' }}>
-              Resolving <span style={{ color: 'var(--text)' }}>{progress.current}</span>…
+        </header>
+
+        {error && (
+          <p className="t-caption" style={{ color: 'var(--accent)', marginBottom: 'var(--s-5)' }}>
+            {error}
+          </p>
+        )}
+
+        {status === 'idle' && (
+          <label
+            style={{
+              display: 'block',
+              padding: 'var(--s-7) var(--s-5)',
+              textAlign: 'center',
+              cursor: 'pointer',
+              borderTop: '1px dashed var(--border-faint)',
+              borderBottom: '1px dashed var(--border-faint)',
+            }}
+          >
+            <Upload size={28} strokeWidth={1.5} style={{ color: 'var(--text-muted)', margin: '0 auto var(--s-3)' }} />
+            <p className="t-h3">Choisir un CSV</p>
+            <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+              ratings.csv, watched.csv ou diary.csv depuis votre export Letterboxd
             </p>
-          )}
-          <div style={{ height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden' }}>
-            <div
-              style={{
-                width: `${Math.round((progress.done / progress.total) * 100)}%`,
-                height: '100%',
-                background: 'var(--copper)',
-                transition: 'width 0.2s',
-              }}
-            />
-          </div>
-          <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-            {progress.imported} imported · {progress.skipped} skipped · {progress.failed} failed
-          </p>
-        </div>
-      )}
+            <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFile} />
+          </label>
+        )}
 
-      {status === 'done' && progress && (
-        <div
-          className="rounded-xl p-5"
-          style={{ background: 'rgba(201,162,85,0.05)', border: '1px solid rgba(201,162,85,0.2)' }}
-        >
-          <CheckCircle2 size={20} style={{ color: 'var(--copper)', marginBottom: 8 }} />
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'var(--text)', fontWeight: 600 }}>
-            Done
-          </h2>
-          <p className="mt-1 mb-3" style={{ color: 'var(--text-muted)', fontSize: '0.88rem', fontFamily: 'var(--font-body)' }}>
-            {progress.imported} review{progress.imported === 1 ? '' : 's'} imported,
-            {' '}{progress.skipped} skipped (already on Rendezvu),
-            {' '}{progress.failed} couldn&apos;t be matched on TMDB.
-          </p>
-          <div className="flex gap-2">
-            <Link
-              href="/groups"
-              className="px-4 py-2 rounded-lg"
-              style={{ background: 'var(--copper)', color: '#000', fontFamily: 'var(--font-display)', fontSize: '0.85rem' }}
-            >
-              Back to groups
-            </Link>
-            <button
-              onClick={() => { setStatus('idle'); setRows([]); setProgress(null) }}
-              className="px-4 py-2 rounded-lg transition-all hover:bg-white/5 cursor-pointer"
-              style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}
-            >
-              Import another file
-            </button>
+        {status === 'parsed' && (
+          <div
+            style={{
+              padding: 'var(--s-5) 0',
+              borderTop: '1px solid var(--border-faint)',
+              borderBottom: '1px solid var(--border-faint)',
+            }}
+          >
+            <p className="t-caption" style={{ color: 'var(--accent)' }}>Prêt à importer</p>
+            <h2 className="t-h2" style={{ marginTop: 'var(--s-2)' }}>
+              {rows.length} films trouvés.
+            </h2>
+            <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)', marginBottom: 'var(--s-5)' }}>
+              On cherche chaque titre sur TMDB, on déduplique vos films existants, et on saute les avis déjà écrits ici. Quelques minutes pour les grosses collections (rate-limit TMDB).
+            </p>
+            <div className="flex" style={{ gap: 'var(--s-3)' }}>
+              <button onClick={runImport} className="btn btn-primary">
+                Démarrer l&apos;import
+              </button>
+              <button onClick={() => { setStatus('idle'); setRows([]) }} className="btn btn-ghost">
+                Annuler
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {status === 'running' && progress && (
+          <div
+            style={{
+              padding: 'var(--s-5) 0',
+              borderTop: '1px solid var(--border-faint)',
+              borderBottom: '1px solid var(--border-faint)',
+            }}
+          >
+            <p className="t-caption" style={{ color: 'var(--accent)' }}>
+              Import en cours · {progress.done} / {progress.total}
+            </p>
+            {progress.current && (
+              <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+                Résolution&nbsp;: <span style={{ color: 'var(--text)' }}>{progress.current}</span>…
+              </p>
+            )}
+            <div style={{ marginTop: 'var(--s-4)', height: 4, background: 'var(--surface)', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${Math.round((progress.done / progress.total) * 100)}%`,
+                  height: '100%',
+                  background: 'var(--accent)',
+                  transition: 'width 200ms var(--motion-easing)',
+                }}
+              />
+            </div>
+            <p className="t-caption t-tnum" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
+              {progress.imported} importés · {progress.skipped} sautés · {progress.failed} non résolus
+            </p>
+          </div>
+        )}
+
+        {status === 'done' && progress && (
+          <div
+            style={{
+              padding: 'var(--s-5) 0',
+              borderTop: '1px solid var(--border-faint)',
+              borderBottom: '1px solid var(--border-faint)',
+            }}
+          >
+            <p className="t-caption" style={{ color: 'var(--accent)' }}>Terminé.</p>
+            <h2 className="t-h2" style={{ marginTop: 'var(--s-2)' }}>
+              C&apos;est fait.
+            </h2>
+            <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)', marginBottom: 'var(--s-5)' }}>
+              {progress.imported} avis importés, {progress.skipped} sautés (déjà sur Rendezvu), {progress.failed} introuvables sur TMDB.
+            </p>
+            <div className="flex" style={{ gap: 'var(--s-3)', flexWrap: 'wrap' }}>
+              <Link href="/groups" className="btn btn-primary">
+                Retour aux groupes
+              </Link>
+              <button
+                onClick={() => { setStatus('idle'); setRows([]); setProgress(null) }}
+                className="btn btn-ghost"
+              >
+                Importer un autre fichier
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   )
 }

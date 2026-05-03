@@ -17,5 +17,17 @@ export default async function SettingsPage() {
 
   if (!profile) redirect('/auth')
 
-  return <SettingsClient initialProfile={profile} email={session.user.email ?? ''} />
+  const { data: prefs } = await supabase
+    .from('notification_prefs')
+    .select('id, user_id, group_id, kind, channel, enabled')
+    .eq('user_id', session.user.id)
+    .is('group_id', null)
+
+  return (
+    <SettingsClient
+      initialProfile={profile}
+      email={session.user.email ?? ''}
+      initialPrefs={prefs ?? []}
+    />
+  )
 }

@@ -20,19 +20,27 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   if (!group) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--text)', fontWeight: 700 }}>
-            Invalid invite link
+      <main
+        style={{
+          background: 'var(--ink)',
+          color: 'var(--text)',
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 'var(--s-5)',
+        }}
+      >
+        <div className="measure" style={{ textAlign: 'center' }}>
+          <h1 className="t-h2">« Ce lien n&apos;ouvre rien. »</h1>
+          <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
+            Il a peut-être expiré, ou n&apos;a jamais existé. Demandez-leur de vous en envoyer un autre.
           </p>
-          <p className="mt-2" style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-            This link may have expired or is incorrect.
-          </p>
-          <a href="/groups" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--copper)', letterSpacing: '0.04em', display: 'block', marginTop: '1rem' }}>
-            ← Back to groups
+          <a href="/groups" className="link t-body" style={{ marginTop: 'var(--s-5)', display: 'inline-block' }}>
+            ← Retour aux groupes
           </a>
         </div>
-      </div>
+      </main>
     )
   }
 

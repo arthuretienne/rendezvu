@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { ArrowLeft, Crown, Lock } from 'lucide-react'
+import { ArrowLeft, Lock } from 'lucide-react'
 import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,59 +29,55 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   const profile = (rows ?? [])[0] as ProfileLookup | undefined
 
   return (
-    <main className="min-h-screen relative" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <nav className="mb-6">
+    <main style={{ background: 'var(--ink)', color: 'var(--text)', minHeight: '100vh' }}>
+      <header style={{ borderBottom: '1px solid var(--border-faint)' }}>
+        <div
+          className="flex items-center justify-between"
+          style={{ maxWidth: 1280, margin: '0 auto', padding: 'var(--s-4) var(--s-5)' }}
+        >
           <Link
             href={session ? '/groups' : '/'}
-            className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5"
-            style={{ color: 'var(--text-muted)' }}
+            className="t-caption flex items-center"
+            style={{ gap: 'var(--s-2)', color: 'var(--text-muted)', textDecoration: 'none' }}
           >
-            <ArrowLeft size={13} />
-            <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>
-              {session ? 'Groups' : 'Rendezvu'}
-            </span>
+            <ArrowLeft size={14} /> {session ? 'Groupes' : 'Rendezvu'}
           </Link>
-        </nav>
-
-        {!profile ? (
-          <div
-            className="rounded-2xl p-8 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          <Link
+            href="/"
+            style={{
+              fontFamily: 'var(--font-serif)',
+              fontWeight: 400,
+              fontSize: 22,
+              color: 'var(--text)',
+              textDecoration: 'none',
+            }}
           >
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', color: 'var(--text)', fontWeight: 600 }}>
-              No one here by that name
-            </h1>
-            <p className="mt-2" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}>
-              The username <code>@{username}</code> does not exist or is no longer available.
+            Rendezvu
+          </Link>
+          <span style={{ width: 80 }} />
+        </div>
+      </header>
+
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: 'var(--s-7) var(--s-5)' }}>
+        {!profile ? (
+          <div className="measure" style={{ textAlign: 'center' }}>
+            <h1 className="t-h2">Personne sous ce nom.</h1>
+            <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
+              <code>@{username}</code> n&apos;existe pas, ou n&apos;est plus disponible.
             </p>
           </div>
         ) : !profile.can_view ? (
-          <div
-            className="rounded-2xl p-8 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <Lock size={28} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', color: 'var(--text)', fontWeight: 600 }}>
-              @{profile.username} is private
-            </h1>
-            <p className="mt-2" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)' }}>
+          <div className="measure" style={{ textAlign: 'center' }}>
+            <Lock size={28} style={{ color: 'var(--text-muted)', margin: '0 auto var(--s-3)' }} />
+            <h1 className="t-h2">@{profile.username} est privé.</h1>
+            <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)' }}>
               {session
-                ? 'Send them a friend request to see their profile and reviews.'
-                : 'Sign in to see if you have access.'}
+                ? 'Envoyez-leur une demande pour voir leur profil.'
+                : 'Connectez-vous pour voir si vous y avez accès.'}
             </p>
             {!session && (
-              <Link
-                href="/auth"
-                className="inline-block mt-4 px-5 py-2 rounded-xl"
-                style={{
-                  background: 'var(--copper)',
-                  color: '#000',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.9rem',
-                }}
-              >
-                Sign in
+              <Link href="/auth" className="btn btn-primary" style={{ marginTop: 'var(--s-5)' }}>
+                Se connecter
               </Link>
             )}
           </div>
@@ -95,8 +92,6 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 async function ProfileBody({ profile, session }: { profile: ProfileLookup; session: boolean }) {
   const supabase = await createClient()
 
-  // Pull the user's recent reviews if their profile is at least friends-visible
-  // and the caller passed RLS for SELECT (which the RPC already validated).
   const { data: reviews } = await supabase
     .from('reviews')
     .select(`
@@ -111,126 +106,73 @@ async function ProfileBody({ profile, session }: { profile: ProfileLookup; sessi
 
   return (
     <>
-      <header className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'var(--copper)',
-              color: '#000',
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.6rem',
-              fontWeight: 700,
-            }}
-          >
-            {profile.display_name[0]?.toUpperCase()}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.8rem', color: 'var(--text)', fontWeight: 600 }}>
-                {profile.display_name}
-              </h1>
-              {profile.is_patron && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,162,85,0.15)', color: 'var(--copper)', fontSize: '0.62rem', fontFamily: 'var(--font-mono)' }}>
-                  <Crown size={10} /> PATRON
-                </span>
-              )}
-            </div>
-            <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
-              @{profile.username}
-            </p>
-          </div>
-        </div>
+      <header style={{ textAlign: 'center', marginBottom: 'var(--s-7)' }}>
+        <span className="avatar avatar-96" style={{ margin: '0 auto', display: 'inline-flex' }}>
+          {profile.display_name[0]?.toUpperCase()}
+        </span>
+        <h1 className="t-h1" style={{ marginTop: 'var(--s-4)' }}>
+          {profile.display_name}
+          {profile.is_patron && <span className="badge badge-accent" style={{ marginLeft: 'var(--s-3)', verticalAlign: 'middle' }}>Patron</span>}
+        </h1>
+        <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+          @{profile.username}
+        </p>
         {profile.bio && (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontFamily: 'var(--font-body)', lineHeight: 1.6 }}>
-            {profile.bio}
+          <p className="t-lead" style={{ color: 'var(--text)', fontStyle: 'italic', marginTop: 'var(--s-4)', maxWidth: '50ch', marginInline: 'auto' }}>
+            «&nbsp;{profile.bio}&nbsp;»
           </p>
         )}
-        <p
-          className="mt-3"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.6rem',
-            color: 'var(--text-muted)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}
-        >
-          On Rendezvu since {format(new Date(profile.created_at), 'MMMM yyyy')}
-          {' · '}
-          {reviewCount} review{reviewCount === 1 ? '' : 's'}
-          {profile.is_self ? ' · This is you' : profile.is_friend ? ' · Friend' : ''}
+        <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-4)' }}>
+          Sur Rendezvu depuis {format(new Date(profile.created_at), 'MMMM yyyy', { locale: fr })}
+          {' · '}{reviewCount} {reviewCount === 1 ? 'avis' : 'avis'}
+          {profile.is_self ? ' · c\'est vous' : profile.is_friend ? ' · compagnon' : ''}
+        </p>
+        <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-3)', maxWidth: '50ch', marginInline: 'auto' }}>
+          Demandez-lui un lien si vous voulez voir un film ensemble.
         </p>
       </header>
 
       {!session && (
-        <div
-          className="rounded-xl p-4 mb-6"
-          style={{ background: 'rgba(201,162,85,0.05)', border: '1px solid rgba(201,162,85,0.2)' }}
-        >
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
-            <Link href="/auth" style={{ color: 'var(--copper)', fontWeight: 500 }}>Sign in</Link>
-            {' '}to send {profile.display_name} a friend request and start a movie group together.
-          </p>
-        </div>
+        <p className="t-body" style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 'var(--s-6)' }}>
+          <Link href="/auth" className="link">Connectez-vous</Link> pour envoyer une demande à {profile.display_name} et commencer un groupe ensemble.
+        </p>
       )}
 
       <section>
-        <h2 className="marquee mb-3">Recent reviews</h2>
+        <h2 className="t-h2" style={{ marginBottom: 'var(--s-4)' }}>Quelques films récemment notés.</h2>
         {!reviews || reviews.length === 0 ? (
-          <div
-            className="rounded-xl p-5 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-              No public reviews yet.
-            </p>
-          </div>
+          <p className="t-body" style={{ color: 'var(--text-muted)' }}>
+            Aucun avis public pour l&apos;instant.
+          </p>
         ) : (
-          <div className="space-y-2">
-            {reviews.map(r => {
+          <div>
+            {reviews.map((r) => {
               type Item = { id: string; title: string; year: number | null; poster_path: string | null }
               const item = (Array.isArray(r.item) ? r.item[0] : r.item) as Item
               return (
                 <article
                   key={r.id}
-                  className="rounded-xl p-4"
-                  style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+                  style={{
+                    padding: 'var(--s-4) 0',
+                    borderBottom: '1px solid var(--border-faint)',
+                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: '0.95rem', fontWeight: 600 }}>
-                          {item.title}
-                        </p>
-                        <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.66rem' }}>
-                          {item.year ?? '—'}
-                        </span>
-                        <span className="ml-auto px-1.5 py-0.5 rounded" style={{ background: 'rgba(201,162,85,0.1)', color: 'var(--copper)', fontSize: '0.66rem', fontFamily: 'var(--font-mono)' }}>
-                          {r.rating}/10
-                        </span>
-                      </div>
-                      {r.body && (
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)', lineHeight: 1.5 }}>
-                          {r.body}
-                        </p>
-                      )}
-                      <p
-                        className="mt-2"
-                        style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.6rem',
-                          color: 'var(--text-muted)',
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {format(new Date(r.created_at), 'MMM d, yyyy')}
-                        {r.is_rewatch ? ' · Rewatch' : ''}
-                        {r.contains_spoilers ? ' · Spoilers' : ''}
-                      </p>
-                    </div>
-                  </div>
+                  <p className="t-h3" style={{ color: 'var(--text)' }}>
+                    {item.title}
+                    <span className="t-caption t-tnum" style={{ color: 'var(--text-muted)', marginLeft: 'var(--s-2)', fontWeight: 400 }}>
+                      {item.year ?? ''} · <span style={{ color: 'var(--accent)' }}>★</span> {r.rating}/10
+                    </span>
+                  </p>
+                  {r.body && (
+                    <p className="t-body" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+                      {r.body}
+                    </p>
+                  )}
+                  <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+                    {format(new Date(r.created_at), 'd MMMM yyyy', { locale: fr })}
+                    {r.is_rewatch ? ' · revisionnage' : ''}
+                    {r.contains_spoilers ? ' · spoilers' : ''}
+                  </p>
                 </article>
               )
             })}

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Search, UserPlus, Check, X, ArrowLeft, Settings as SettingsIcon, Crown } from 'lucide-react'
+import { Search, Check, X, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Friendship, Profile } from '@/lib/types'
 
@@ -89,38 +89,22 @@ export default function FriendsClient({
     if (!profile) return null
     return (
       <div
-        className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
+        className="flex items-center"
+        style={{
+          gap: 'var(--s-4)',
+          padding: 'var(--s-3) 0',
+          borderBottom: '1px solid var(--border-faint)',
+        }}
       >
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{
-            background: 'var(--copper)',
-            color: '#000',
-            fontFamily: 'var(--font-display)',
-            fontSize: '0.75rem',
-            fontWeight: 700,
-          }}
-        >
+        <span className="avatar avatar-32">
           {profile.display_name[0]?.toUpperCase()}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p style={{ color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}>
-              {profile.display_name}
-            </p>
-            {profile.is_patron && (
-              <Crown size={11} style={{ color: 'var(--copper)' }} />
-            )}
-          </div>
-          <p
-            style={{
-              color: 'var(--text-muted)',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.66rem',
-              letterSpacing: '0.04em',
-            }}
-          >
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p className="t-body" style={{ color: 'var(--text)' }}>
+            {profile.display_name}
+            {profile.is_patron && <span className="badge badge-accent" style={{ marginLeft: 'var(--s-2)' }}>Patron</span>}
+          </p>
+          <p className="t-caption" style={{ color: 'var(--text-muted)' }}>
             @{profile.username}
           </p>
         </div>
@@ -130,211 +114,167 @@ export default function FriendsClient({
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
-      <nav className="flex items-center justify-between mb-8">
-        <Link
-          href="/groups"
-          className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-all hover:bg-white/5"
-          style={{ color: 'var(--text-muted)' }}
-        >
-          <ArrowLeft size={13} />
-          <span style={{ fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>Groups</span>
-        </Link>
-        <Link
-          href="/settings"
-          className="p-1.5 rounded-lg transition-all hover:bg-white/5"
-          style={{ color: 'var(--text-muted)' }}
-          title="Settings"
-        >
-          <SettingsIcon size={14} />
-        </Link>
-      </nav>
-
-      <header className="mb-8">
-        <p className="marquee">Rendezvu</p>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--text)', fontWeight: 600 }}>
-          Friends
-        </h1>
-      </header>
-
-      {/* Search */}
-      <form onSubmit={search} className="mb-6">
+    <main style={{ background: 'var(--ink)', minHeight: '100vh' }}>
+      <header style={{ borderBottom: '1px solid var(--border-faint)' }}>
         <div
-          className="flex items-center gap-2 rounded-xl px-3 py-2"
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+          className="flex items-center justify-between"
+          style={{ maxWidth: 1280, margin: '0 auto', padding: 'var(--s-4) var(--s-5)' }}
         >
-          <Search size={14} style={{ color: 'var(--text-muted)' }} />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Find someone by username…"
-            className="flex-1 bg-transparent outline-none"
-            style={{ color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}
-          />
-          <button
-            type="submit"
-            disabled={searching || query.trim().length < 2}
-            className="px-3 py-1 rounded-md transition-all hover:opacity-90 disabled:opacity-40 cursor-pointer"
+          <Link
+            href="/groups"
+            className="t-caption flex items-center"
+            style={{ gap: 'var(--s-2)', color: 'var(--text-muted)', textDecoration: 'none' }}
+          >
+            <ArrowLeft size={14} /> Groupes
+          </Link>
+          <Link
+            href="/"
             style={{
-              background: 'var(--copper)',
-              color: '#000',
-              fontSize: '0.75rem',
-              fontFamily: 'var(--font-display)',
-              letterSpacing: '0.02em',
+              fontFamily: 'var(--font-serif)',
+              fontWeight: 400,
+              fontSize: 22,
+              color: 'var(--text)',
+              textDecoration: 'none',
             }}
           >
-            {searching ? '…' : 'Search'}
-          </button>
+            Rendezvu
+          </Link>
+          <Link href="/settings" className="t-caption" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+            Profil
+          </Link>
         </div>
-      </form>
+      </header>
 
-      {error && (
-        <p className="mb-4" style={{ color: '#ef4444', fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>{error}</p>
-      )}
+      <div style={{ maxWidth: 720, margin: '0 auto', padding: 'var(--s-7) var(--s-5)' }}>
+        <header style={{ marginBottom: 'var(--s-6)' }}>
+          <h1 className="t-h1">Vos compagnons de cinéma.</h1>
+          <p className="t-caption" style={{ color: 'var(--text-muted)', marginTop: 'var(--s-2)' }}>
+            Toutes les personnes avec qui vous avez vu au moins un film.
+          </p>
+        </header>
 
-      {results.length > 0 && (
-        <section className="mb-8">
-          <h2 className="marquee mb-2">Search results</h2>
-          <div className="space-y-2">
-            {results.map(p => {
-              const existing = friendships.find(f => counterpart(f) === p.id)
+        <form onSubmit={search} style={{ marginBottom: 'var(--s-6)' }}>
+          <div className="flex items-center" style={{ gap: 'var(--s-2)', borderBottom: '1px solid var(--border-faint)' }}>
+            <Search size={16} style={{ color: 'var(--text-muted)' }} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Chercher quelqu’un par pseudo…"
+              className="input"
+              style={{ borderBottom: 'none' }}
+            />
+            <button
+              type="submit"
+              disabled={searching || query.trim().length < 2}
+              className="btn btn-ghost"
+              style={{ height: 32 }}
+            >
+              {searching ? '…' : 'Chercher'}
+            </button>
+          </div>
+        </form>
+
+        {error && (
+          <p className="t-caption" style={{ color: 'var(--accent)', marginBottom: 'var(--s-4)' }}>{error}</p>
+        )}
+
+        {results.length > 0 && (
+          <section style={{ marginBottom: 'var(--s-6)' }}>
+            <h2 className="t-h3" style={{ color: 'var(--text-muted)', marginBottom: 'var(--s-3)' }}>Résultats</h2>
+            {results.map((p) => {
+              const existing = friendships.find((f) => counterpart(f) === p.id)
               const action = existing ? (
-                <span
-                  style={{
-                    fontSize: '0.66rem',
-                    color: 'var(--text-muted)',
-                    fontFamily: 'var(--font-mono)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {existing.status === 'accepted' ? 'Friends' : existing.status}
+                <span className="t-caption" style={{ color: 'var(--text-muted)' }}>
+                  {existing.status === 'accepted' ? 'Déjà compagnons' : existing.status === 'pending' ? 'En attente' : existing.status}
                 </span>
               ) : (
                 <button
                   onClick={() => sendRequest(p.id)}
                   disabled={busy === p.id}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-md transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--copper)',
-                    fontSize: '0.72rem',
-                    fontFamily: 'var(--font-body)',
-                  }}
+                  className="btn btn-secondary"
+                  style={{ height: 32, padding: '0 var(--s-3)' }}
                 >
-                  <UserPlus size={11} />
-                  {busy === p.id ? '…' : 'Add'}
+                  {busy === p.id ? '…' : 'Inviter'}
                 </button>
               )
               return <ProfileRow key={p.id} profile={p} action={action} />
             })}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* Incoming requests */}
-      {incoming.length > 0 && (
-        <section className="mb-8">
-          <h2 className="marquee mb-2">Incoming requests</h2>
-          <div className="space-y-2">
-            {incoming.map(f => (
+        {incoming.length > 0 && (
+          <section style={{ marginBottom: 'var(--s-6)' }}>
+            <h2 className="t-h3" style={{ color: 'var(--text-muted)', marginBottom: 'var(--s-3)' }}>Demandes reçues</h2>
+            {incoming.map((f) => (
               <ProfileRow
                 key={f.id}
                 profile={profiles[counterpart(f)]}
                 action={
-                  <div className="flex gap-1">
+                  <div className="flex" style={{ gap: 'var(--s-2)' }}>
                     <button
                       onClick={() => respond(f.id, true)}
                       disabled={busy === f.id}
-                      className="p-1.5 rounded-md transition-all hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                      style={{ background: 'var(--copper)', color: '#000' }}
-                      title="Accept"
+                      className="btn btn-primary"
+                      style={{ height: 32, padding: '0 var(--s-3)' }}
+                      title="Accepter"
                     >
-                      <Check size={12} />
+                      <Check size={14} />
                     </button>
                     <button
                       onClick={() => respond(f.id, false)}
                       disabled={busy === f.id}
-                      className="p-1.5 rounded-md transition-all hover:bg-white/5 disabled:opacity-50 cursor-pointer"
-                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-                      title="Decline"
+                      className="btn btn-ghost"
+                      style={{ height: 32 }}
+                      title="Refuser"
                     >
-                      <X size={12} />
+                      <X size={14} />
                     </button>
                   </div>
                 }
               />
             ))}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* Outgoing pending */}
-      {outgoing.length > 0 && (
-        <section className="mb-8">
-          <h2 className="marquee mb-2">Pending</h2>
-          <div className="space-y-2">
-            {outgoing.map(f => (
+        {outgoing.length > 0 && (
+          <section style={{ marginBottom: 'var(--s-6)' }}>
+            <h2 className="t-h3" style={{ color: 'var(--text-muted)', marginBottom: 'var(--s-3)' }}>En attente</h2>
+            {outgoing.map((f) => (
               <ProfileRow
                 key={f.id}
                 profile={profiles[counterpart(f)]}
-                action={
-                  <span
-                    style={{
-                      fontSize: '0.66rem',
-                      color: 'var(--text-muted)',
-                      fontFamily: 'var(--font-mono)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    Awaiting
-                  </span>
-                }
+                action={<span className="t-caption" style={{ color: 'var(--text-muted)' }}>En attente</span>}
               />
             ))}
-          </div>
-        </section>
-      )}
+          </section>
+        )}
 
-      {/* Accepted friends */}
-      <section>
-        <h2 className="marquee mb-2">
-          Friends {accepted.length > 0 && <span style={{ color: 'var(--text-muted)' }}>· {accepted.length}</span>}
-        </h2>
-        {accepted.length === 0 ? (
-          <div
-            className="rounded-xl p-5 text-center"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontFamily: 'var(--font-body)' }}>
-              No friends yet — search by username to send a request.
+        <section>
+          <h2 className="t-h3" style={{ color: 'var(--text-muted)', marginBottom: 'var(--s-3)' }}>
+            Compagnons {accepted.length > 0 && <>· {accepted.length}</>}
+          </h2>
+          {accepted.length === 0 ? (
+            <p className="t-body" style={{ color: 'var(--text-muted)' }}>
+              Personne pour l&apos;instant. Cherchez par pseudo pour envoyer une demande.
             </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {accepted.map(f => (
+          ) : (
+            accepted.map((f) => (
               <ProfileRow
                 key={f.id}
                 profile={profiles[counterpart(f)]}
                 action={
                   <Link
                     href={`/u/${profiles[counterpart(f)]?.username ?? ''}`}
-                    style={{
-                      fontSize: '0.7rem',
-                      color: 'var(--copper)',
-                      fontFamily: 'var(--font-body)',
-                    }}
+                    className="link t-caption"
                   >
-                    View →
+                    Voir →
                   </Link>
                 }
               />
-            ))}
-          </div>
-        )}
-      </section>
+            ))
+          )}
+        </section>
+      </div>
     </main>
   )
 }

@@ -31,7 +31,21 @@ export async function proxy(request: NextRequest) {
     || path.startsWith('/auth')
     || path.startsWith('/invite/')
     || path.startsWith('/u/')
+    || path === '/about'
+    || path === '/how-it-works'
+    || path === '/pricing'
+    || path === '/changelog'
+    || path === '/metrics'
+    || path === '/press'
+    || path === '/help'
+    || path === '/contact'
+    || path === '/security'
+    || path === '/terms'
+    || path === '/credits'
     || path === '/privacy'
+    || path.startsWith('/api/stripe/webhook')
+    || path.startsWith('/api/cron/')
+    || path.startsWith('/monitoring')
 
   if (!user && !isPublic) {
     const loginUrl = new URL('/auth', request.url)

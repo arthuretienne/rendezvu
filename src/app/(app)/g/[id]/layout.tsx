@@ -27,14 +27,14 @@ export default async function GroupLayout({
   if (!memberRes.data) redirect('/groups')
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--ink)' }}>
       <GroupNav
         groupId={groupId}
-        groupName={groupRes.data?.name ?? 'Group'}
+        groupName={groupRes.data?.name ?? 'Groupe'}
         groupEmoji={groupRes.data?.emoji ?? '🎬'}
-        userName={profileRes.data?.display_name ?? session.user.email ?? 'You'}
+        userName={profileRes.data?.display_name ?? session.user.email ?? 'Vous'}
       />
-      <main className="max-w-4xl mx-auto px-4 py-8">{children}</main>
+      <main style={{ maxWidth: 1024, margin: '0 auto', padding: 'var(--s-7) var(--s-5)' }}>{children}</main>
     </div>
   )
 }
